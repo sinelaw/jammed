@@ -2,6 +2,7 @@ var jammed = (function () {
     'use strict';
 
     var intervalId;
+    var world;
 
     function Vector(x, y) {
         this.x = x || 0;
@@ -30,16 +31,27 @@ var jammed = (function () {
         return canvas.getContext('2d');
     }
 
-    function drawWorld(world) {
+    function forEachCar(world, f) {
         var i;
-        var canvas = getCanvas();
-        var context = getContext(canvas);
         var car;
         for (i = 0; i < world.cars.length; i += 1) {
-            car = world.cars[i];
-            context.fillRect(car.position.x, car.position.y, car.size.x, car.size.y);
-
+            f(world.cars[i]);
         }
+    }
+
+    function drawWorld(world) {
+        var canvas = getCanvas();
+        var context = getContext(canvas);
+        forEachCar(world, function (car) {
+            context.fillRect(car.position.x, car.position.y, car.size.x, car.size.y);
+        });
+    }
+
+    function simulateStep(world) {
+        forEachCar(world, function (car) {
+            car.position.x += car.velocity.x;
+            car.position.y += car.velocity.y;
+        });
     }
 
     function addRandomCar(world) {
@@ -55,36 +67,49 @@ var jammed = (function () {
         }
     }
 
+    function resetCanvas() {
+        var canvas = getCanvas();
+        var context = getContext(canvas);
+
+        // Store the current transformation matrix
+        context.save();
+
+        // Use the identity matrix while clearing the canvas
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Restore the transform
+        context.restore();
+    }
+
+    function init() {
+        var i;
+        var canvas = getCanvas();
+        resetCanvas();
+        world = createWorld(canvas.width, canvas.height);
+
+        for (i = 0; i < 100; i += 1) {
+            addRandomCar(world);
+        }
+    }
+
     return {
+        init: init,
+
         start: function () {
-            var canvas = getCanvas();
-            var world = createWorld(canvas.width, canvas.height);
-            var i;
-
-            for (i = 0; i < 100; i += 1) {
-                addRandomCar(world);
-            }
-
             intervalId = window.setInterval(function () {
                 drawWorld(world);
+                simulateStep(world);
             }, 100);
         },
 
         stop: stop,
 
         clear: function () {
-            var canvas = getCanvas();
-            var context = getContext(canvas);
-            // Store the current transformation matrix
-            context.save();
-
-            // Use the identity matrix while clearing the canvas
-            context.setTransform(1, 0, 0, 1, 0, 0);
-            context.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Restore the transform
-            context.restore();
+            resetCanvas();
+            init();
         }
     };
+
 
 }());

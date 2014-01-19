@@ -13,12 +13,14 @@
     <div class="container">
         <div class="row">
             <h1>Jammed!
-                <small>Traffic jams in javascript</small>
+<!--                <small>Traffic jams in javascript</small>-->
+                <div class="btn-group">
+                    <button class="btn" type="button" onclick="jammed.start()">Start</button>
+                    <button class="btn" type="button" onclick="jammed.stop()">Stop</button>
+                    <button class="btn" type="button" onclick="jammed.clear()">Clear</button>
+                </div>
             </h1>
 
-            <button class="btn" type="button" onclick="jammed.start()">Start</button>
-            <button class="btn" type="button" onclick="jammed.stop()">Stop</button>
-            <button class="btn" type="button" onclick="jammed.clear()">Clear</button>
         </div>
         <div class="row">
             <div>
@@ -28,6 +30,9 @@
 
     </div>
 
+    <script>
+        jammed.init();
+    </script>
 </body>
 
 </html>
