@@ -3,6 +3,7 @@ var jammed = (function () {
 
     var intervalId;
     var world;
+    var maxVelSqrt = 10;
 
     function Vector(x, y) {
         this.x = x || 0;
@@ -42,6 +43,7 @@ var jammed = (function () {
     function drawWorld(world) {
         var canvas = getCanvas();
         var context = getContext(canvas);
+        resetCanvas();
         forEachCar(world, function (car) {
             context.fillRect(car.position.x, car.position.y, car.size.x, car.size.y);
         });
@@ -51,14 +53,23 @@ var jammed = (function () {
         forEachCar(world, function (car) {
             car.position.x += car.velocity.x;
             car.position.y += car.velocity.y;
+            if ((car.position.x > world.width) || (car.position.x < 0) || (car.position.y > world.height) || (car.position.y < 0)) {
+                car.position = new Vector(randomInt(world.width), randomInt(world.height));
+                car.velocity = new Vector(randomInt(maxVelSqrt, true, 1), randomInt(maxVelSqrt, true, 1));
+            }
         });
     }
 
+    function randomInt(max, allowNegative, min) {
+        var sign = (allowNegative && (Math.random() > 0.5)) ? -1 : 1;
+        return sign * ((min || 0) + Math.floor(Math.random() * max));
+    }
+
     function addRandomCar(world) {
-        var maxVelSqrt = 10;
+
         world.cars.push(new Car(new Vector(1, 2),
-            new Vector(Math.random() * world.width, Math.random() * world.height),
-            new Vector(Math.random() * maxVelSqrt, Math.random() * maxVelSqrt)));
+            new Vector(randomInt(world.width), randomInt(world.height)),
+            new Vector(randomInt(maxVelSqrt, true, 1), randomInt(maxVelSqrt, true, 1))));
     }
 
     function stop() {
