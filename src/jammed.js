@@ -108,6 +108,7 @@ var jammed = (function () {
         init: init,
 
         start: function () {
+            stop();
             intervalId = window.setInterval(function () {
                 drawWorld(world);
                 simulateStep(world);
