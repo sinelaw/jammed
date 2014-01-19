@@ -3,7 +3,7 @@
 
 <head>
     <title>Jammed!</title>
-    <link href="//netdna.bootstrapcdn.com/bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="//netdna.bootstrapcdn.com/bootswatch/3.0.3/spacelab/bootstrap.min.css" rel="stylesheet" />
     <link href="jammed.css" rel="stylesheet" />
     <script src="jammed.js"></script>
 </head>
@@ -15,16 +15,16 @@
             <h1>Jammed!
 <!--                <small>Traffic jams in javascript</small>-->
                 <div class="btn-group">
-                    <button class="btn" type="button" onclick="jammed.start()">Start</button>
-                    <button class="btn" type="button" onclick="jammed.stop()">Stop</button>
-                    <button class="btn" type="button" onclick="jammed.clear()">Clear</button>
+                    <button class="btn btn-primary" type="button" onclick="jammed.start()">Start</button>
+                    <button class="btn btn-primary" type="button" onclick="jammed.stop()">Stop</button>
+                    <button class="btn btn-primary" type="button" onclick="jammed.clear()">Clear</button>
                 </div>
             </h1>
 
         </div>
         <div class="row">
             <div>
-                <canvas id="canvas"></canvas>
+                <canvas id="canvas" width=326 height=240 style='width:326px;height:240px'></canvas>
             </div>
         </div>
 

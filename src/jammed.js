@@ -67,7 +67,7 @@ var jammed = (function () {
 
     function addRandomCar(world) {
 
-        world.cars.push(new Car(new Vector(1, 2),
+        world.cars.push(new Car(new Vector(2, 4),
             new Vector(randomInt(world.width), randomInt(world.height)),
             new Vector(randomInt(maxVelSqrt, true, 1), randomInt(maxVelSqrt, true, 1))));
     }
@@ -78,9 +78,19 @@ var jammed = (function () {
         }
     }
 
+    function initCanvas() {
+        var canvas = getCanvas();
+        var context = getContext(canvas);
+
+        context.fillStyle = "#ffffff";
+//        canvas.width = 600;
+//        canvas.height = 300;
+    }
+
     function resetCanvas() {
         var canvas = getCanvas();
         var context = getContext(canvas);
+
 
         // Store the current transformation matrix
         context.save();
@@ -96,7 +106,7 @@ var jammed = (function () {
     function init() {
         var i;
         var canvas = getCanvas();
-        resetCanvas();
+        initCanvas();
         world = createWorld(canvas.width, canvas.height);
 
         for (i = 0; i < 100; i += 1) {
