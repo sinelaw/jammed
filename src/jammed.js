@@ -22,24 +22,48 @@ var jammed = (function () {
      * @param {Vector} position
      * @param {Vector} velocity
      * @constructor
+     * @returns {{size:Vector, position:Vector, velocity:Vector, color:string}}
      */
     function Car(size, position, velocity) {
         this.size = size;
         this.position = position;
         this.velocity = velocity;
+        this.color = randomColor();
+    }
+
+    /**
+     * @param {Array.<Vector>} points
+     * @param {Array.<Car>} cars
+     * @constructor
+     * @returns {{ points: Array.<Vector>, cars: Array.<Car> }}
+     */
+    function Road(points, cars) {
+        var road = this;
+        this.points = points;
+        this.cars = cars;
+
+        /**
+         * @param {function(Car)} f
+         */
+        this.forEachCar = function (f) {
+            /** @type {number} */
+            var i;
+            for (i = 0; i < road.cars.length; i += 1) {
+                f(road.cars[i]);
+            }
+        }
     }
 
     /**
      * @param {number} width
      * @param {number} height
-     * @returns {{width: number, height: number, cars: Array.<Car>}}
+     * @constructor
+     * @returns {{width:number, height:number, roads:Array.<Road>}}
      */
-    function createWorld(width, height) {
-        return {
-            width: width,
-            height: height,
-            cars: []
-        };
+    function World(width, height) {
+        this.width = width;
+        this.height = height;
+        this.roads = [];
     }
 
     /**
@@ -58,28 +82,22 @@ var jammed = (function () {
     }
 
     /**
-     * @param {{cars:Array.<Car>}} world
-     * @param {function(Car)} f
+     * @param {World} world
      */
-    function forEachCar(world, f) {
-        /** @type {number} */
-        var i;
-        for (i = 0; i < world.cars.length; i += 1) {
-            f(world.cars[i]);
-        }
-    }
-
     function drawWorld(world) {
         var canvas = getCanvas();
         var context = getContext(canvas);
         resetCanvas();
-        forEachCar(world, /** @param {Car} car */ function (car) {
+        world.roads[0].forEachCar(function (car) {
+            context.fillStyle = car.color;
+            context.shadowColor = car.color;
+            context.shadowBlur = 2;
             context.fillRect(car.position.x, car.position.y, car.size.x, car.size.y);
         });
     }
 
     function simulateStep(world) {
-        forEachCar(world, function (car) {
+        world.roads[0].forEachCar(function (car) {
             car.position.x += car.velocity.x;
             car.position.y += car.velocity.y;
             if ((car.position.x > world.width) || (car.position.x < 0) || (car.position.y > world.height) || (car.position.y < 0)) {
@@ -91,8 +109,8 @@ var jammed = (function () {
 
     /**
      * @param {number} max
-     * @param {boolean} allowNegative
-     * @param {number} min
+     * @param {boolean=} allowNegative
+     * @param {number=} min
      * @returns {number}
      */
     function randomInt(max, allowNegative, min) {
@@ -100,9 +118,11 @@ var jammed = (function () {
         return sign * ((min || 0) + Math.floor(Math.random() * max));
     }
 
-    function addRandomCar(world) {
-
-        world.cars.push(new Car(new Vector(2, 4),
+    /**
+     * @param {Road} road
+     */
+    function addRandomCar(road) {
+        road.cars.push(new Car(new Vector(2, 4),
             new Vector(randomInt(world.width), randomInt(world.height)),
             new Vector(randomInt(maxVelSqrt, true, 1), randomInt(maxVelSqrt, true, 1))));
     }
@@ -113,11 +133,19 @@ var jammed = (function () {
         }
     }
 
+    function randomHexDigit() {
+        var digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+        return digits[randomInt(digits.length)];
+    }
+
+    function randomColor() {
+        return '#' + randomHexDigit() + randomHexDigit() + randomHexDigit() + randomHexDigit() + randomHexDigit() + randomHexDigit();
+    }
+
     function initCanvas() {
         var canvas = getCanvas();
         var context = getContext(canvas);
 
-        context.fillStyle = "#ffffff";
 //        canvas.width = 600;
 //        canvas.height = 300;
     }
@@ -142,10 +170,11 @@ var jammed = (function () {
         var i;
         var canvas = getCanvas();
         initCanvas();
-        world = createWorld(canvas.width, canvas.height);
+        world = new World(canvas.width, canvas.height);
+        world.roads.push(new Road([new Vector(0, 0), new Vector(100, 100)], []));
 
         for (i = 0; i < 100; i += 1) {
-            addRandomCar(world);
+            addRandomCar(world.roads[0]);
         }
     }
 
