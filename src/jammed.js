@@ -9,6 +9,10 @@ var jammed = (function () {
     /** @type {number} */
     var maxCarLength = 8;
 
+    var maxRandomRoadPoints = 10;
+
+    var width, height;
+
     /**
      * @param {number} x
      * @param {number} y
@@ -140,7 +144,7 @@ var jammed = (function () {
     Road.prototype.getLength = function () {
         var length = 0;
         this.forEachSegment(function (prevPoint, point) {
-            length +=  point.minus(prevPoint).getSize();
+            length += point.minus(prevPoint).getSize();
         });
         return length;
     };
@@ -153,14 +157,14 @@ var jammed = (function () {
         var targetSegmentStart;
         /** @type {Vector} */
         var targetSegmentDirection;
+        var segment;
         var pos = roadPosition;
         var totalSize = 0;
         this.forEachSegment(function (prevPoint, point) {
-            var segment = point.minus(prevPoint);
+            segment = point.minus(prevPoint);
             var segmentSize = segment.getSize();
             targetSegmentStart = prevPoint;
             if (segmentSize > pos) {
-                targetSegmentDirection = segment.toUnit();
                 return true;
             }
             pos -= segmentSize;
@@ -168,6 +172,7 @@ var jammed = (function () {
         if (!targetSegmentStart) {
             return null;
         }
+        targetSegmentDirection = segment.toUnit();
         return new Vector(targetSegmentStart.x + pos * targetSegmentDirection.x, targetSegmentStart.y + pos * targetSegmentDirection.y);
     };
 
@@ -209,6 +214,7 @@ var jammed = (function () {
         var i;
         /** @type {Road} */
         var road;
+
         function drawCar(road) {
             return function (car) {
                 var position = road.roadToWorldPosition(car.position);
@@ -218,6 +224,7 @@ var jammed = (function () {
                 context.fillRect(position.x, position.y, 4, car.length);
             };
         }
+
         resetCanvas();
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
@@ -231,12 +238,14 @@ var jammed = (function () {
         /** @type {Road} */
         var road;
         var roadLength;
+
         function simulateCar(car) {
             car.position += car.speed;
             if (car.position > roadLength) {
                 car.position = 0;
             }
         }
+
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
             roadLength = road.getLength();
@@ -301,15 +310,44 @@ var jammed = (function () {
         context.restore();
     }
 
+    /**
+     * @param {number} maxX
+     * @param {number} maxY
+     * @returns {Vector}
+     */
+    function randomVector(maxX, maxY) {
+        return new Vector(randomInt(maxX), randomInt(maxY));
+    }
+
+    function randomRoad() {
+        var i, numSegments = randomInt(maxRandomRoadPoints) + 2;
+        var points = [randomVector(width, height)];
+        var prevPoint = points[0];
+        var point;
+        var road;
+        for (i = 0; i < numSegments; i += 1) {
+            point = randomVector(width, height).minus(prevPoint);
+            point = prevPoint.plus(new Vector(point.x * (i % 2), point.y * ((i + 1) % 2)));
+            points.push(point);
+            prevPoint = point;
+        }
+        road = new Road(points, []);
+
+        for (i = 0; i < 3; i += 1) {
+            addRandomCar(road);
+        }
+        return road;
+    }
+
     function init() {
         var i;
         var canvas = getCanvas();
+        width = canvas.width;
+        height = canvas.height;
         initCanvas();
         world = new World(canvas.width, canvas.height);
-        world.roads.push(new Road([new Vector(0, 0), new Vector(100, 100), new Vector(200, 0), new Vector(300, 200), new Vector(400, 0), new Vector(600, 300)], []));
-
-        for (i = 0; i < 2; i += 1) {
-            addRandomCar(world.roads[0]);
+        for (i = 0; i < 5; i += 1) {
+            world.roads.push(randomRoad());
         }
     }
 
