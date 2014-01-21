@@ -3,19 +3,37 @@ var jammed = (function () {
 
     var intervalId;
     var world;
+
+    /** @type {number} */
     var maxVelSqrt = 10;
 
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @constructor
+     */
     function Vector(x, y) {
         this.x = x || 0;
         this.y = y || 0;
     }
 
+    /**
+     * @param {Vector} size
+     * @param {Vector} position
+     * @param {Vector} velocity
+     * @constructor
+     */
     function Car(size, position, velocity) {
         this.size = size;
         this.position = position;
         this.velocity = velocity;
     }
 
+    /**
+     * @param {number} width
+     * @param {number} height
+     * @returns {{width: number, height: number, cars: Array.<Car>}}
+     */
     function createWorld(width, height) {
         return {
             width: width,
@@ -24,17 +42,28 @@ var jammed = (function () {
         };
     }
 
+    /**
+     * @returns {HTMLCanvasElement}
+     */
     function getCanvas() {
-        return document.getElementById('canvas');
+        return /** @type {HTMLCanvasElement} */ document.getElementById('canvas');
     }
 
+    /**
+     * @param {HTMLCanvasElement} canvas
+     * @returns {CanvasRenderingContext2D}
+     */
     function getContext(canvas) {
         return canvas.getContext('2d');
     }
 
+    /**
+     * @param {{cars:Array.<Car>}} world
+     * @param {function(Car)} f
+     */
     function forEachCar(world, f) {
+        /** @type {number} */
         var i;
-        var car;
         for (i = 0; i < world.cars.length; i += 1) {
             f(world.cars[i]);
         }
@@ -44,7 +73,7 @@ var jammed = (function () {
         var canvas = getCanvas();
         var context = getContext(canvas);
         resetCanvas();
-        forEachCar(world, function (car) {
+        forEachCar(world, /** @param {Car} car */ function (car) {
             context.fillRect(car.position.x, car.position.y, car.size.x, car.size.y);
         });
     }
@@ -60,6 +89,12 @@ var jammed = (function () {
         });
     }
 
+    /**
+     * @param {number} max
+     * @param {boolean} allowNegative
+     * @param {number} min
+     * @returns {number}
+     */
     function randomInt(max, allowNegative, min) {
         var sign = (allowNegative && (Math.random() > 0.5)) ? -1 : 1;
         return sign * ((min || 0) + Math.floor(Math.random() * max));
