@@ -138,12 +138,11 @@ var jammed = (function () {
 
     /** @returns {number} */
     Road.prototype.getLength = function () {
-        /** @type {Vector} */
-        var length = new Vector(0, 0);
+        var length = 0;
         this.forEachSegment(function (prevPoint, point) {
-            length = length.plus(point.minus(prevPoint));
+            length +=  point.minus(prevPoint).getSize();
         });
-        return length.getSize();
+        return length;
     };
 
     /** @param {number} roadPosition
@@ -307,7 +306,7 @@ var jammed = (function () {
         var canvas = getCanvas();
         initCanvas();
         world = new World(canvas.width, canvas.height);
-        world.roads.push(new Road([new Vector(0, 0), new Vector(100, 100), new Vector(200, 0), new Vector(300, 200), new Vector(400, 0), new Vector(600, 600)], []));
+        world.roads.push(new Road([new Vector(0, 0), new Vector(100, 100), new Vector(200, 0), new Vector(300, 200), new Vector(400, 0), new Vector(600, 300)], []));
 
         for (i = 0; i < 2; i += 1) {
             addRandomCar(world.roads[0]);
