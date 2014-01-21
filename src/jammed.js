@@ -5,7 +5,9 @@ var jammed = (function () {
     var world;
 
     /** @type {number} */
-    var maxVelSqrt = 3;
+    var maxVelSqrt = 10;
+    /** @type {number} */
+    var maxCarLength = 8;
 
     /**
      * @param {number} x
@@ -139,9 +141,7 @@ var jammed = (function () {
         /** @type {Vector} */
         var length = new Vector(0, 0);
         this.forEachSegment(function (prevPoint, point) {
-            var segment = point.minus(prevPoint);
-            length.x += segment.x;
-            length.y += segment.y;
+            length = length.plus(point.minus(prevPoint));
         });
         return length.getSize();
     };
@@ -219,7 +219,7 @@ var jammed = (function () {
                 context.fillStyle = car.color;
                 context.shadowColor = car.color;
                 context.shadowBlur = 2;
-                context.fillRect(position.x, position.y, 2, car.length);
+                context.fillRect(position.x, position.y, 4, car.length);
             });
         }
     }
@@ -228,10 +228,15 @@ var jammed = (function () {
         var i;
         /** @type {Road} */
         var road;
+        var roadLength;
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
+            roadLength = road.getLength();
             road.forEachCar(function (car) {
                 car.position += car.speed;
+                if (car.position > roadLength) {
+                    car.position = 0;
+                }
             });
         }
     }
@@ -251,7 +256,7 @@ var jammed = (function () {
      * @param {Road} road
      */
     function addRandomCar(road) {
-        road.cars.push(new Car(randomInt(3) + 1, randomInt(road.getLength()), randomInt(maxVelSqrt) + 1));
+        road.cars.push(new Car(randomInt(maxCarLength) + 1, randomInt(road.getLength()), randomInt(maxVelSqrt) + 1));
     }
 
     function stop() {
