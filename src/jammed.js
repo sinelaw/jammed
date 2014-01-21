@@ -24,12 +24,12 @@ var jammed = (function () {
     /** @returns {number} */
     Vector.prototype.getMagnitude = function () {
         return this.x * this.x + this.y * this.y;
-    }
+    };
 
     /** @returns {number} */
     Vector.prototype.getSize = function () {
         return Math.sqrt(this.getMagnitude());
-    }
+    };
 
     /**
      * @param {Vector} otherVector
@@ -37,7 +37,7 @@ var jammed = (function () {
      */
     Vector.prototype.minus = function (otherVector) {
         return new Vector(this.x - otherVector.x, this.y - otherVector.y);
-    }
+    };
 
     /**
      * @param {Vector} otherVector
@@ -45,7 +45,7 @@ var jammed = (function () {
      */
     Vector.prototype.plus = function (otherVector) {
         return new Vector(this.x + otherVector.x, this.y + otherVector.y);
-    }
+    };
 
     /**
      * @param {number} scalar
@@ -53,13 +53,13 @@ var jammed = (function () {
      */
     Vector.prototype.mul = function (scalar) {
         return new Vector(this.x * scalar, this.y * scalar);
-    }
+    };
 
     /** @returns {Vector} */
     Vector.prototype.toUnit = function () {
         var size = this.getSize();
         return new Vector(this.x / size, this.y / size);
-    }
+    };
 
     /**
      * @param {number} length
@@ -110,7 +110,7 @@ var jammed = (function () {
         context.strokeStyle = "red";
         context.beginPath();
         context.moveTo(this.points[0].x, this.points[0].y);
-        for (i = 0; i < this.points.length; i += 1) {
+        for (i = 1; i < this.points.length; i += 1) {
             point = this.points[i];
             context.lineTo(point.x, point.y);
         }
@@ -158,7 +158,7 @@ var jammed = (function () {
         var totalSize = 0;
         this.forEachSegment(function (prevPoint, point) {
             var segment = point.minus(prevPoint);
-            var segmentSize = segment.getSize()
+            var segmentSize = segment.getSize();
             targetSegmentStart = prevPoint;
             if (segmentSize > pos) {
                 targetSegmentDirection = segment.toUnit();
@@ -210,17 +210,20 @@ var jammed = (function () {
         var i;
         /** @type {Road} */
         var road;
-        resetCanvas();
-        for (i = 0; i < world.roads.length; i += 1) {
-            road = world.roads[i];
-            road.draw(context);
-            road.forEachCar(function (car) {
+        function drawCar(road) {
+            return function (car) {
                 var position = road.roadToWorldPosition(car.position);
                 context.fillStyle = car.color;
                 context.shadowColor = car.color;
                 context.shadowBlur = 2;
                 context.fillRect(position.x, position.y, 4, car.length);
-            });
+            };
+        }
+        resetCanvas();
+        for (i = 0; i < world.roads.length; i += 1) {
+            road = world.roads[i];
+            road.draw(context);
+            road.forEachCar(drawCar(road));
         }
     }
 
@@ -229,15 +232,16 @@ var jammed = (function () {
         /** @type {Road} */
         var road;
         var roadLength;
+        function simulateCar(car) {
+            car.position += car.speed;
+            if (car.position > roadLength) {
+                car.position = 0;
+            }
+        }
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
             roadLength = road.getLength();
-            road.forEachCar(function (car) {
-                car.position += car.speed;
-                if (car.position > roadLength) {
-                    car.position = 0;
-                }
-            });
+            road.forEachCar(simulateCar);
         }
     }
 
