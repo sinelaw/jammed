@@ -1,6 +1,10 @@
 var jammed = (function () {
     'use strict';
 
+    var NUM_RANDOM_ROADS = 5;
+    var NUM_RANDOM_CARS_PER_ROAD = 5;
+    var WRECKED_CAR_STYLE = 'black';
+
     var intervalId;
     var world;
 
@@ -65,6 +69,39 @@ var jammed = (function () {
         return new Vector(this.x / size, this.y / size);
     };
 
+
+    /**
+     * @param {Array.<Vector>} points
+     * @param {function(Vector,Vector):(undefined|boolean)} f
+     */
+    function forEachSegment(points, f) {
+        var i;
+        /** @type {Vector} */
+        var point;
+        /** @type {Vector} */
+        var prevPoint;
+
+        for (i = 1; i < points.length; i += 1) {
+            point = points[i];
+            prevPoint = points[i - 1];
+            if (f(prevPoint, point)) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * @param {Array.<Vector>} points
+     * @returns {number}
+     */
+    function getLength(points) {
+        var length = 0;
+        forEachSegment(points, function (prevPoint, point) {
+            length += point.minus(prevPoint).getSize();
+        });
+        return length;
+    }
+
     /**
      * @param {number} length
      * @param {number} position
@@ -77,29 +114,29 @@ var jammed = (function () {
         this.position = position;
         this.speed = speed;
         this.color = randomColor();
+        this.wrecked = false;
     }
 
     /**
      * @param {Array.<Vector>} points
      * @param {Array.<Car>} cars
      * @constructor
-     * @returns {{ points: Array.<Vector>, cars: Array.<Car> }}
+     * @returns {{ points: Array.<Vector>, cars: Array.<Car>, length: number }}
      */
     function Road(points, cars) {
-        var road = this;
         this.points = points;
-        this.cars = cars;
+        this.cars = [];
+        this.length = getLength(points);
     }
 
-
     /**
-     * @param {function(Car)} f
+     * @param {function(Road, Car,?Car)} f
      */
     Road.prototype.forEachCar = function (f) {
         /** @type {number} */
         var i;
         for (i = 0; i < this.cars.length; i += 1) {
-            f(this.cars[i]);
+            f(this, this.cars[i], this.cars[i + 1]);
         }
     };
 
@@ -112,6 +149,8 @@ var jammed = (function () {
             return;
         }
         context.strokeStyle = "red";
+        context.shadowColor = "#88ff88";
+        context.shadowBlur = 10;
         context.beginPath();
         context.moveTo(this.points[0].x, this.points[0].y);
         for (i = 1; i < this.points.length; i += 1) {
@@ -121,32 +160,10 @@ var jammed = (function () {
         context.stroke();
     };
 
-    /**
-     * @param {function(Vector,Vector):(undefined|boolean)} f
-     */
-    Road.prototype.forEachSegment = function (f) {
-        var i;
-        /** @type {Vector} */
-        var point;
-        /** @type {Vector} */
-        var prevPoint;
-
-        for (i = 1; i < this.points.length; i += 1) {
-            point = this.points[i];
-            prevPoint = this.points[i - 1];
-            if (f(prevPoint, point)) {
-                return;
-            }
-        }
-    };
-
-    /** @returns {number} */
-    Road.prototype.getLength = function () {
-        var length = 0;
-        this.forEachSegment(function (prevPoint, point) {
-            length += point.minus(prevPoint).getSize();
+    Road.prototype.sortCars = function() {
+        this.cars.sort(function (a, b) {
+            return a.position - b.position;
         });
-        return length;
     };
 
     /** @param {number} roadPosition
@@ -159,8 +176,7 @@ var jammed = (function () {
         var targetSegmentDirection;
         var segment;
         var pos = roadPosition;
-        var totalSize = 0;
-        this.forEachSegment(function (prevPoint, point) {
+        forEachSegment(this.points, function (prevPoint, point) {
             segment = point.minus(prevPoint);
             var segmentSize = segment.getSize();
             targetSegmentStart = prevPoint;
@@ -169,11 +185,11 @@ var jammed = (function () {
             }
             pos -= segmentSize;
         });
-        if (!targetSegmentStart) {
-            return null;
+        if (targetSegmentStart && segment) {
+            targetSegmentDirection = segment.toUnit();
+            return new Vector(targetSegmentStart.x + pos * targetSegmentDirection.x, targetSegmentStart.y + pos * targetSegmentDirection.y);
         }
-        targetSegmentDirection = segment.toUnit();
-        return new Vector(targetSegmentStart.x + pos * targetSegmentDirection.x, targetSegmentStart.y + pos * targetSegmentDirection.y);
+        return null;
     };
 
 
@@ -215,21 +231,58 @@ var jammed = (function () {
         /** @type {Road} */
         var road;
 
-        function drawCar(road) {
-            return function (car) {
-                var position = road.roadToWorldPosition(car.position);
-                context.fillStyle = car.color;
-                context.shadowColor = car.color;
-                context.shadowBlur = 2;
-                context.fillRect(position.x, position.y, 4, car.length);
-            };
+        function drawCar(road, car, nextCar) {
+            var position = road.roadToWorldPosition(car.position);
+            var style = car.color;
+            if (car.wrecked) {
+                style = WRECKED_CAR_STYLE;
+            }
+            context.fillStyle = style;
+            context.shadowColor = style;
+            context.shadowBlur = 2;
+            context.fillRect(position.x, position.y, car.length, car.length);
+
         }
 
         resetCanvas();
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
             road.draw(context);
-            road.forEachCar(drawCar(road));
+            road.forEachCar(drawCar);
+        }
+    }
+
+
+    /**
+     * @param {Road} road
+     * @param {Car} car
+     * @param {?Car} nextCar
+     */
+    function simulateCar(road, car, nextCar) {
+        var distanceToNextCarBackside = null;
+        if (car.wrecked) {
+            return;
+        }
+        if (nextCar) {
+            distanceToNextCarBackside = nextCar.position - car.position;
+            if (distanceToNextCarBackside < 0) {
+                distanceToNextCarBackside += road.length;
+            }
+        }
+        car.position += car.speed;
+        if ((null !== distanceToNextCarBackside) && (distanceToNextCarBackside - car.speed < car.length)) {
+            // Wreck!
+            car.position = nextCar.position - car.length;
+            car.wrecked = true;
+            car.speed = 0;
+            nextCar.wrecked = true;
+            nextCar.speed = 0;
+        }
+        if (car.position > road.length) {
+            car.position -= road.length;
+        }
+        if (car.position < 0) {
+            car.position += road.length;
         }
     }
 
@@ -237,18 +290,10 @@ var jammed = (function () {
         var i;
         /** @type {Road} */
         var road;
-        var roadLength;
-
-        function simulateCar(car) {
-            car.position += car.speed;
-            if (car.position > roadLength) {
-                car.position = 0;
-            }
-        }
-
+        var newCars;
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
-            roadLength = road.getLength();
+            road.sortCars();
             road.forEachCar(simulateCar);
         }
     }
@@ -268,7 +313,7 @@ var jammed = (function () {
      * @param {Road} road
      */
     function addRandomCar(road) {
-        road.cars.push(new Car(randomInt(maxCarLength) + 1, randomInt(road.getLength()), randomInt(maxVelSqrt) + 1));
+        road.cars.push(new Car(randomInt(maxCarLength) + 1, randomInt(road.length), randomInt(maxVelSqrt) + 1));
     }
 
     function stop() {
@@ -333,7 +378,7 @@ var jammed = (function () {
         }
         road = new Road(points, []);
 
-        for (i = 0; i < 3; i += 1) {
+        for (i = 0; i < NUM_RANDOM_CARS_PER_ROAD; i += 1) {
             addRandomCar(road);
         }
         return road;
@@ -346,7 +391,7 @@ var jammed = (function () {
         height = canvas.height;
         initCanvas();
         world = new World(canvas.width, canvas.height);
-        for (i = 0; i < 5; i += 1) {
+        for (i = 0; i < NUM_RANDOM_ROADS; i += 1) {
             world.roads.push(randomRoad());
         }
     }
