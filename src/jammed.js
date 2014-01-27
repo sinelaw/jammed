@@ -1,14 +1,16 @@
 var jammed = (function () {
     'use strict';
 
-    var NUM_RANDOM_ROADS = 10;
+    var NUM_RANDOM_ROADS = 1;
+    var maxRandomRoadPoints = 30;
     var NUM_RANDOM_CARS_PER_ROAD = 10;
     var WRECKED_CAR_STYLE = 'black';
 
+    var SIMULATION_STEP_SIZE = 0.05;
     var MAX_SPEED = 10;
     var MIN_MAX_SPEED = 5;
-    var MIN_IMPACT_TIME = 15;
-    var MIN_KEEPING_DISTANCE = 25;
+    var MIN_IMPACT_TIME = 10;
+    var MIN_KEEPING_DISTANCE = 15;
 
     var DELTA = 0.001;
 
@@ -19,8 +21,6 @@ var jammed = (function () {
     var maxVelSqrt = 10;
     /** @type {number} */
     var maxCarLength = 8;
-
-    var maxRandomRoadPoints = 10;
 
     var width, height;
 
@@ -44,6 +44,22 @@ var jammed = (function () {
     /** @returns {number} */
     Vector.prototype.getSize = function () {
         return Math.sqrt(this.getMagnitude());
+    };
+
+    /**
+     * @param {Vector} otherVector
+     * @returns {Vector}
+     */
+    Vector.prototype.min = function (otherVector) {
+        return new Vector(Math.min(this.x, otherVector.x), Math.min(this.y, otherVector.y));
+    };
+
+    /**
+     * @param {Vector} otherVector
+     * @returns {Vector}
+     */
+    Vector.prototype.max = function (otherVector) {
+        return new Vector(Math.max(this.x, otherVector.x), Math.max(this.y, otherVector.y));
     };
 
     /**
@@ -126,16 +142,23 @@ var jammed = (function () {
         this.wrecked = false;
     }
 
+    Car.prototype.wreck = function() {
+        this.accel = 0;
+        this.speed = 0;
+        this.wrecked = true;
+    };
+
     /**
      * @param {Array.<Vector>} points
      * @param {Array.<Car>} cars
      * @constructor
-     * @returns {{ points: Array.<Vector>, cars: Array.<Car>, length: number }}
+     * @returns {{ points: Array.<Vector>, cars: Array.<Car>, length: number, color: string }}
      */
     function Road(points, cars) {
         this.points = points;
         this.cars = [];
         this.length = getLength(points);
+        this.color = 'rgba(' + [randomInt(255), randomInt(255), randomInt(255), 0.1].join(',') + ')';
     }
 
     /**
@@ -145,7 +168,7 @@ var jammed = (function () {
         /** @type {number} */
         var i;
         for (i = 0; i < this.cars.length; i += 1) {
-            f(this, this.cars[i], i <= this.cars.length ? this.cars[i + 1] : this.cars[0]);
+            f(this, this.cars[i], (i + 1 < this.cars.length) ? this.cars[i + 1] : this.cars[0]);
         }
     };
 
@@ -157,13 +180,13 @@ var jammed = (function () {
         if (!this.points.length) {
             return;
         }
-        context.fillStyle = "rgba(255,0,0,0.1)";
-        context.shadowColor = "#88ff88";
-        context.shadowBlur = 10;
+        context.fillStyle = this.color;
+        context.shadowColor = "#ffffff";
+        context.shadowBlur = -width/2;
         for (i = 1; i < this.points.length; i += 1) {
-            prevPoint = this.points[i - 1];
-            point = this.points[i];
-            context.fillRect(prevPoint.x - width, prevPoint.y - width, point.x - prevPoint.x + width*2, point.y - prevPoint.y + width*2);
+            prevPoint = this.points[i - 1].min(this.points[i]);
+            point = this.points[i].max(this.points[i-1]);
+            context.fillRect(prevPoint.x, prevPoint.y, point.x - prevPoint.x + width, point.y - prevPoint.y + width);
         }
     };
 
@@ -245,25 +268,28 @@ var jammed = (function () {
                 style = WRECKED_CAR_STYLE;
             }
             context.fillStyle = style;
-            context.shadowColor = nextCar ? 'yellow' : style;
+            if (Math.abs(car.accel) < DELTA) {
+                context.shadowColor = 'black';
+            } else if (car.accel < 0) {
+                context.shadowColor = 'red';
+            } else {
+                context.shadowColor = 'green';
+            }
             context.shadowBlur = 4;
             context.fillRect(position.x, position.y, car.length, car.length);
-            //context.fillText(JSON.stringify(car), position.x + 1, position.y + 1);
-//
-//            if (nextCar) {
-//                context.strokeStyle = style;
-//                context.beginPath();
-//                context.moveTo(position.x, position.y);
-//                position = road.roadToWorldPosition(nextCar.position);
-//                context.lineTo(position.x, position.y);
-//                context.stroke();
+//            if (!nextCar) {
+//            context.fillText(JSON.stringify(car), position.x + 1, position.y + 1);
 //            }
+//
         }
 
         resetCanvas();
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
             road.draw(context);
+        }
+        for (i = 0; i < world.roads.length; i += 1) {
+            road = world.roads[i];
             road.forEachCar(drawCar);
         }
     }
@@ -291,26 +317,26 @@ var jammed = (function () {
             if (Math.abs(closingSpeed) > DELTA) {
                 impactTime = distanceToNextCarBackside / closingSpeed;
             } else {
-                impactTime = 10000;
+                impactTime = -1;
             }
-            //car.impactTime = impactTime;
-            if (impactTime <= MIN_IMPACT_TIME) {
+            if (impactTime < 0) {
+                // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
+                car.accel = 1.0;
+            } else if (impactTime <= MIN_IMPACT_TIME) {
+                car.accel = -(impactTime/2);
+            }
+
+            if (distanceToNextCarBackside < MIN_KEEPING_DISTANCE) {
                 car.accel = -1.0;
-            } else if (distanceToNextCarBackside < MIN_KEEPING_DISTANCE) {
-                car.accel = 0;
             }
         }
         car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel));
-        car.position += car.speed;
+        car.position += car.speed * SIMULATION_STEP_SIZE;
         if ((null !== distanceToNextCarBackside) && (distanceToNextCarBackside - closingSpeed < car.length)) {
             // Wreck!
             car.position = nextCar.position - car.length;
-            car.wrecked = true;
-            car.speed = 0;
-            car.accel = 0;
-            nextCar.wrecked = true;
-            nextCar.speed = 0;
-            nextCar.accel = 0;
+            car.wreck();
+            nextCar.wreck();
         }
         if (car.position > road.length) {
             car.position -= road.length;
@@ -347,7 +373,8 @@ var jammed = (function () {
      * @param {Road} road
      */
     function addRandomCar(road) {
-        road.cars.push(new Car(randomInt(maxCarLength) + 1, randomInt(road.length), randomInt(maxVelSqrt) + 1));
+        var lastCar = road.cars.length ? road.cars[road.cars.length - 1].position : 0;
+        road.cars.push(new Car(randomInt(maxCarLength - 5) + 5, lastCar + MIN_KEEPING_DISTANCE + randomInt(5), 0));
     }
 
     function stop() {
@@ -410,6 +437,7 @@ var jammed = (function () {
             points.push(point);
             prevPoint = point;
         }
+        //points.push(points[0]); // close the loop
         road = new Road(points, []);
 
         for (i = 0; i < NUM_RANDOM_CARS_PER_ROAD; i += 1) {
@@ -439,7 +467,7 @@ var jammed = (function () {
             intervalId = window.setInterval(function () {
                 drawWorld(world);
                 simulateStep(world);
-            }, 100);
+            }, 1000*SIMULATION_STEP_SIZE / 10.0);
         },
 
         stop: stop,
