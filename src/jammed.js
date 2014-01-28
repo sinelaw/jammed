@@ -1,31 +1,62 @@
 var jammed = (function () {
     'use strict';
 
-    /** @type {number} */
+    /** @type {number}
+     * @const */
     var NUM_RANDOM_ROADS = 1;
-    /** @type {number} */
+    /** @type {number}
+     * @const */
     var maxRandomRoadPoints = 10;
-    /** @type {number} */
+    /** @type {number}
+     * @const */
     var NUM_RANDOM_CARS_PER_ROAD = 10;
 
-    /** @type {number} */
+    /** @type {number}
+     * @const */
     var TARGET_FPS = 20;
     /** @type {number} */
-    var DELTA_T = (1 / TARGET_FPS);
+    var deltaT = (1 / TARGET_FPS);
     /** @type {number} */
-    var DELTA_T_SQUARED = DELTA_T * DELTA_T;
+    var deltaTSquared = deltaT * deltaT;
 
-    /** @type {number} */
-    var ACCELERATION = 10;
+    /** @type {number}
+     * @const */
+    var ACCELERATION = 4;
 
-    /** @type {number} */
-    var MAX_SPEED = 40;
-    /** @type {number} */
-    var MIN_MAX_SPEED = 10;
-    /** @type {number} */
+    /** @type {number}
+     * @const */
+    var MAX_SPEED = 100;
+
+    /** @type {number}
+     * @const */
+    var MIN_MAX_SPEED = 70;
+
+    /**
+     * Minimum time-to-impact, under which cars start braking.
+     * @type {number}
+     * @const */
     var MIN_IMPACT_TIME = 10;
-    /** @type {number} */
-    var MIN_KEEPING_DISTANCE = 15;
+
+    /**
+     * Minimum travel time to next car's rear, that cars keep while in motion.
+     * @type {number}
+     * @const */
+    var MAX_KEEPING_TIME = 3;
+    /** @type {number}
+     * @const */
+    var MIN_KEEPING_TIME = 0.25;
+
+    /** @type {number}
+     * @const */
+    var MIN_KEEPING_DISTANCE = 1;
+
+    /** @type {number}
+     * @const */
+    var MIN_CAR_LENGTH = 5;
+
+    /** @type {number}
+     * @const */
+    var MAX_CAR_LENGTH = 8;
 
     /**
      * Overlap allowed for collision detection (required due to numerical calculation's not be accurate)
@@ -36,16 +67,16 @@ var jammed = (function () {
     /**
      * General delta for floating-point comparisons
      * @type {number}
+     * @const
      * */
     var DELTA = 0.001;
 
-    /** @type {string} */
+    /** @type {string}
+     * @const */
     var WRECKED_CAR_STYLE = 'black';
 
     var world;
 
-    /** @type {number} */
-    var maxCarLength = 8;
 
     /** @type {number} */
     var width;
@@ -64,7 +95,6 @@ var jammed = (function () {
      * @returns {{ x:number, y:number }}
      */
     function Vector(x, y) {
-        var vector = this;
         this.x = x || 0;
         this.y = y || 0;
     }
@@ -163,7 +193,7 @@ var jammed = (function () {
      * @param {number} position
      * @param {number} speed
      * @constructor
-     * @returns {{length:number, position:number, speed:number, maxSpeed: number, accel: number, color:string}}
+     * @returns {{length:number, position:number, speed:number, maxSpeed: number, accel: number, color:string, minKeepingTime: number}}
      */
     function Car(length, position, speed) {
         this.length = length;
@@ -173,6 +203,7 @@ var jammed = (function () {
         this.maxSpeed = randomInt(MAX_SPEED - MIN_MAX_SPEED) + MIN_MAX_SPEED;
         this.color = randomColor();
         this.wrecked = false;
+        this.minKeepingTime = MIN_KEEPING_TIME + Math.random() * (MAX_KEEPING_TIME - MIN_KEEPING_TIME);
     }
 
     Car.prototype.wreck = function () {
@@ -210,7 +241,6 @@ var jammed = (function () {
      */
     Road.prototype.draw = function (context) {
         var i, point, prevPoint, width = 6;
-        return;
         if (!this.points.length) {
             return;
         }
@@ -345,7 +375,7 @@ var jammed = (function () {
         if (nextCar) {
             closingSpeed = car.speed - nextCar.speed;
             distanceToNextCarBackside = nextCar.position - car.position;
-            if (distanceToNextCarBackside < 0) {
+            while (distanceToNextCarBackside < 0) {
                 distanceToNextCarBackside += road.length;
             }
             if (Math.abs(closingSpeed) > DELTA) {
@@ -357,25 +387,28 @@ var jammed = (function () {
                 // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
                 car.accel = ACCELERATION;
             } else if (impactTime <= MIN_IMPACT_TIME) {
-                car.accel = -(impactTime / 2);
+                car.accel = -ACCELERATION;
             }
 
+            if ((car.speed > DELTA) && (distanceToNextCarBackside / car.speed < car.minKeepingTime)) {
+                car.accel = -ACCELERATION;
+            }
             if (distanceToNextCarBackside < MIN_KEEPING_DISTANCE) {
                 car.accel = -ACCELERATION;
             }
         }
-        car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel * DELTA_T));
-        car.position += car.speed * DELTA_T + 0.5 * car.accel * DELTA_T_SQUARED;
+        car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel * deltaT));
+        car.position += car.speed * deltaT + 0.5 * car.accel * deltaTSquared;
         if ((null !== distanceToNextCarBackside) && (distanceToNextCarBackside - closingSpeed + COLLISION_DISTANCE_DELTA < car.length)) {
             // Wreck!
             car.position = nextCar.position - car.length;
             car.wreck();
             nextCar.wreck();
         }
-        if (car.position > road.length) {
+        while (car.position > road.length) {
             car.position -= road.length;
         }
-        if (car.position < 0) {
+        while (car.position < 0) {
             car.position += road.length;
         }
     }
@@ -407,8 +440,10 @@ var jammed = (function () {
      * @param {Road} road
      */
     function addRandomCar(road) {
-        var lastCar = road.cars.length ? road.cars[road.cars.length - 1].position : 0;
-        road.cars.push(new Car(randomInt(maxCarLength - 5) + 5, lastCar + MIN_KEEPING_DISTANCE + randomInt(5), 0));
+        var lastCar = road.cars.length ? road.cars[road.cars.length - 1] : null;
+        var lastCarPos = lastCar ? lastCar.position : 0;
+        var lastCarLength = lastCar ? lastCar.length : 0;
+        road.cars.push(new Car(randomInt(MAX_CAR_LENGTH - MIN_CAR_LENGTH) + MIN_CAR_LENGTH, lastCarPos + lastCarLength + 1 + randomInt(MIN_KEEPING_DISTANCE), 0));
     }
 
     function stop() {
@@ -510,9 +545,9 @@ var jammed = (function () {
                 var elapsed = now - lastRedrawTime;
                 var fps = Math.floor(1000.0 / elapsed);
                 lastRedrawTime = now;
-                DELTA_T = elapsed / 1000.0;
+                deltaT = elapsed / 1000.0;
                 /** @type {number} */
-                DELTA_T_SQUARED = DELTA_T * DELTA_T;
+                deltaTSquared = deltaT * deltaT;
                 drawFPS(fps);
             }
 
