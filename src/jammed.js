@@ -3,6 +3,10 @@ var jammed = (function () {
 
     /** @type {number}
      * @const */
+    var TARGET_FPS = 30;
+
+    /** @type {number}
+     * @const */
     var NUM_RANDOM_ROADS = 1;
     /** @type {number}
      * @const */
@@ -11,9 +15,6 @@ var jammed = (function () {
      * @const */
     var NUM_RANDOM_CARS_PER_ROAD = 10;
 
-    /** @type {number}
-     * @const */
-    var TARGET_FPS = 20;
     /** @type {number} */
     var deltaT = (1 / TARGET_FPS);
     /** @type {number} */
@@ -75,8 +76,8 @@ var jammed = (function () {
      * @const */
     var WRECKED_CAR_STYLE = 'black';
 
+    /** @type {World} */
     var world;
-
 
     /** @type {number} */
     var width;
@@ -87,6 +88,13 @@ var jammed = (function () {
 
     /** @type {Array.<boolean>} */
     var shouldStop = [];
+
+    /** @type {HTMLCanvasElement} */
+    var _canvas;
+    /** @type {CanvasRenderingContext2D} */
+    var _context;
+    /** @type {ImageData} */
+    var _backgroundImage;
 
     /**
      * @param {number} x
@@ -222,7 +230,7 @@ var jammed = (function () {
         this.points = points;
         this.cars = [];
         this.length = getLength(points);
-        this.color = 'rgba(' + [randomInt(255), randomInt(255), randomInt(255), 0.1].join(',') + ')';
+        this.color = 'rgba(' + [randomInt(255, 200), randomInt(255, 200), randomInt(255, 200), 1].join(',') + ')';
     }
 
     /**
@@ -245,8 +253,8 @@ var jammed = (function () {
             return;
         }
         context.fillStyle = this.color;
-        context.shadowColor = "#ffffff";
-        context.shadowBlur = -width / 2;
+//        context.shadowColor = "#ffffff";
+//        context.shadowBlur = -width / 2;
         for (i = 1; i < this.points.length; i += 1) {
             prevPoint = this.points[i - 1].min(this.points[i]);
             point = this.points[i].max(this.points[i - 1]);
@@ -316,11 +324,10 @@ var jammed = (function () {
     }
 
     /**
+     * @param {CanvasRenderingContext2D} context
      * @param {World} world
      */
-    function drawWorld(world) {
-        var canvas = getCanvas();
-        var context = getContext(canvas);
+    function drawWorld(context, world) {
         var i;
         /** @type {Road} */
         var road;
@@ -332,32 +339,42 @@ var jammed = (function () {
                 style = WRECKED_CAR_STYLE;
             }
             context.fillStyle = style;
-            if (Math.abs(car.accel) < DELTA) {
-                context.shadowColor = 'black';
-            } else if (car.accel < 0) {
-                context.shadowColor = 'red';
-            } else {
-                context.shadowColor = 'green';
-            }
-            context.shadowBlur = 4;
-            context.fillRect(position.x, position.y, car.length, car.length);
-//            if (!nextCar) {
-//            context.fillText(JSON.stringify(car), position.x + 1, position.y + 1);
+            // This really slows things down:
+//            if (Math.abs(car.accel) < DELTA) {
+//                context.shadowColor = 'black';
+//            } else if (car.accel < 0) {
+//                context.shadowColor = 'red';
+//            } else {
+//                context.shadowColor = 'green';
 //            }
-//
+//            context.shadowBlur = 4;
+            context.fillRect(position.x, position.y, car.length, car.length);
         }
 
-        resetCanvas();
-        for (i = 0; i < world.roads.length; i += 1) {
-            road = world.roads[i];
-            road.draw(context);
-        }
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
             road.forEachCar(drawCar);
         }
     }
 
+    /**
+     * @param {HTMLCanvas} canvas
+     * @param {CanvasRenderingContext2D} context
+     * @param {World} world
+     * @returns {ImageData}
+     */
+    function drawBackground(canvas, context, world)
+    {
+        /** @type {Road} */
+        var road;
+        /** @type {number} */
+        var i;
+        for (i = 0; i < world.roads.length; i += 1) {
+            road = world.roads[i];
+            road.draw(context);
+        }
+        return context.getImageData(0, 0, canvas.width, canvas.height);
+    }
 
     /**
      * @param {Road} road
@@ -417,7 +434,6 @@ var jammed = (function () {
         var i;
         /** @type {Road} */
         var road;
-        var newCars;
         for (i = 0; i < world.roads.length; i += 1) {
             road = world.roads[i];
             road.forEachCar(simulateCar);
@@ -427,13 +443,14 @@ var jammed = (function () {
 
     /**
      * @param {number} max
-     * @param {boolean=} allowNegative
      * @param {number=} min
+     * @param {boolean=} allowNegative
      * @returns {number}
      */
-    function randomInt(max, allowNegative, min) {
+    function randomInt(max, min, allowNegative) {
         var sign = (allowNegative && (Math.random() > 0.5)) ? -1 : 1;
-        return sign * ((min || 0) + Math.floor(Math.random() * max));
+        min = (min || 0);
+        return sign * (min + Math.floor(Math.random() * (max - min)));
     }
 
     /**
@@ -460,28 +477,17 @@ var jammed = (function () {
         return '#' + randomHexDigit() + randomHexDigit() + randomHexDigit() + randomHexDigit() + randomHexDigit() + randomHexDigit();
     }
 
-    function initCanvas() {
-        var canvas = getCanvas();
-        var context = getContext(canvas);
-
-//        canvas.width = 600;
-//        canvas.height = 300;
-    }
-
     function resetCanvas() {
-        var canvas = getCanvas();
-        var context = getContext(canvas);
-
-
         // Store the current transformation matrix
-        context.save();
+        _context.save();
 
         // Use the identity matrix while clearing the canvas
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.clearRect(0, 0, canvas.width, canvas.height);
+        _context.setTransform(1, 0, 0, 1, 0, 0);
+        _context.clearRect(0, 0, width, height);
+        _context.putImageData(_backgroundImage, 0, 0);
 
         // Restore the transform
-        context.restore();
+        _context.restore();
     }
 
     /**
@@ -517,14 +523,19 @@ var jammed = (function () {
 
     function init() {
         var i;
-        var canvas = getCanvas();
-        width = canvas.width;
-        height = canvas.height;
-        initCanvas();
-        world = new World(canvas.width, canvas.height);
+        _canvas = getCanvas();
+        _context = getContext(_canvas);
+
+        width = _canvas.width;
+        height = _canvas.height;
+        world = new World(_canvas.width, _canvas.height);
         for (i = 0; i < NUM_RANDOM_ROADS; i += 1) {
             world.roads.push(randomRoad());
         }
+        _context.setTransform(1, 0, 0, 1, 0, 0);
+        _context.clearRect(0, 0, width, height);
+        _backgroundImage = drawBackground(_canvas, _context, world);
+        resetCanvas();
     }
 
     return {
@@ -532,19 +543,24 @@ var jammed = (function () {
 
         start: function () {
             var currentRunCount;
-            var lastRedrawTime = Date.now();
+            var lastRedrawTime;
+            var elapsedQueue = [0,0,0,0];
+            var context = _context;
 
             function drawFPS(fps) {
-                var context = getContext(getCanvas());
                 context.fillStyle = 'black';
+                context.shadowBlur = 0;
                 context.fillText('' + fps + ' fps', 10, 10);
             }
 
             function updateFPS() {
                 var now = Date.now();
                 var elapsed = now - lastRedrawTime;
-                var fps = Math.floor(1000.0 / elapsed);
-                lastRedrawTime = now;
+                var averageElapsed = (elapsedQueue[0] + elapsedQueue[1] + elapsedQueue[2] + elapsedQueue[3]) / 4;
+                var fps = Math.floor(1000.0 / averageElapsed);
+                lastRedrawTime = Date.now();
+                elapsedQueue.push(elapsed);
+                elapsedQueue.shift();
                 deltaT = elapsed / 1000.0;
                 /** @type {number} */
                 deltaTSquared = deltaT * deltaT;
@@ -554,7 +570,8 @@ var jammed = (function () {
             function loop() {
                 updateFPS();
                 window.setTimeout(function () {
-                    drawWorld(world);
+                    resetCanvas();
+                    drawWorld(context, world);
                     simulateStep(world);
                     if (shouldStop[currentRunCount]) {
                         return;
