@@ -91,44 +91,49 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         function simulateCar(road, car, nextCar) {
             var distanceToNextCarBackside = null;
             var closingSpeed;
+            var nextCarAbsolutePosition;
             var impactTime;
+            var nextAccel;
             if (car.wrecked) {
                 return;
             }
-            car.accel = car.maxAcceleration;
+            nextAccel = car.maxAcceleration;
             if (nextCar) {
+                nextCarAbsolutePosition = nextCar.position < car.position ? nextCar.position + road.length : nextCar.position;
                 closingSpeed = car.speed - nextCar.speed;
-                distanceToNextCarBackside = nextCar.position - car.position;
-                while (distanceToNextCarBackside < 0) {
-                    distanceToNextCarBackside += road.length;
-                }
-                if (Math.abs(closingSpeed) > consts.DELTA) {
-                    impactTime = distanceToNextCarBackside / closingSpeed;
-                } else {
-                    impactTime = -1;
-                }
-                if (impactTime < 0) {
-                    // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
-                    car.accel = car.maxAcceleration;
-                } else if (impactTime <= consts.MIN_IMPACT_TIME) {
-                    car.accel = -car.maxAcceleration;
+                distanceToNextCarBackside = nextCarAbsolutePosition - car.position - car.length;
+                if (distanceToNextCarBackside < 0) {
+                    // Wreck!
+                    car.wreck();
+                    nextCar.wreck();
+                    //debugger;
+                    return;
                 }
 
-                if ((car.speed > consts.DELTA) && (distanceToNextCarBackside / car.speed < car.minKeepingTime)) {
-                    car.accel = -car.maxAcceleration;
+                if (closingSpeed > 0) {
+                    impactTime = distanceToNextCarBackside / closingSpeed;
+                    if (impactTime < consts.MIN_IMPACT_TIME) {
+                        nextAccel = - closingSpeed / (impactTime / 2);
+                    }
                 }
+                //else {
+                    // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
+                //}
+
                 if (distanceToNextCarBackside < consts.MIN_KEEPING_DISTANCE) {
-                    car.accel = -car.maxAcceleration;
+                    // too close for comfort
+                    nextAccel = Math.min(nextAccel, 0);
+                }
+
+                //console.log('Car:', car.color, 'Distance:', distanceToNextCarBackside, 'Closing speed:', closingSpeed, 'Impact time:', impactTime, 'Accel: ', car.accel);
+                if (nextAccel > 0) {
+                    nextAccel = Math.min(nextAccel, car.maxAcceleration);
                 }
             }
+            car.accel = nextAccel;
             car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel * deltaT));
             car.position += car.speed * deltaT + 0.5 * car.accel * deltaTSquared;
-            if ((null !== distanceToNextCarBackside) && (distanceToNextCarBackside - closingSpeed + consts.COLLISION_DISTANCE_DELTA < car.length)) {
-                // Wreck!
-                car.position = nextCar.position - car.length;
-                car.wreck();
-                nextCar.wreck();
-            }
+
             while (car.position > road.length) {
                 car.position -= road.length;
             }

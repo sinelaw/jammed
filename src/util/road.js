@@ -103,7 +103,7 @@ define(['./mathUtil', './vector', './car', './consts'], function(mathUtil, Vecto
             prevPoint = point;
         }
         //points.push(points[0]); // close the loop
-        road = new Road(points, [], 20);
+        road = new Road(points, [], consts.ROAD_WIDTH);
 
         for (i = 0; i < consts.NUM_RANDOM_CARS_PER_ROAD; i += 1) {
             addRandomCar(road);

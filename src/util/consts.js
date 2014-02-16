@@ -7,7 +7,7 @@ define({
 
     /** @type {number}
      * @const */
-    MAX_ACCELERATION: 5,
+    MAX_ACCELERATION: 8,
 
     /** @type {number}
      * @const */
@@ -48,7 +48,7 @@ define({
      * Minimum time-to-impact, under which cars start braking.
      * @type {number}
      * @const */
-    MIN_IMPACT_TIME: 10,
+    MIN_IMPACT_TIME: 1,
 
 
     /** @type {number}
@@ -78,6 +78,8 @@ define({
 
     /** @type {number}
      * @const */
-    NUM_RANDOM_ROADS: 1
+    NUM_RANDOM_ROADS: 1,
+
+    ROAD_WIDTH: 6
 
 });

@@ -6,7 +6,8 @@
     <link  rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" />
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
     <link href="jammed.css" rel="stylesheet" />
-    <script src="components/requirejs/require.js"></script>
+    <script data-main="main" src="components/requirejs/require.js"></script>
+    <script src="main.js"></script>
 </head>
 
 <body>
@@ -32,12 +33,6 @@
 
     </div>
 
-    <script>
-        require(['jammed'], function (jammed) {
-            window.jammed = jammed;
-            jammed.init();
-        });
-    </script>
 </body>
 
 </html>
