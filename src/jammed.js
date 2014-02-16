@@ -93,6 +93,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var closingSpeed;
             var nextCarAbsolutePosition;
             var impactTime;
+            var keepingTime;
             var nextAccel;
             if (car.wrecked) {
                 return;
@@ -120,9 +121,10 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                     // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
                 //}
 
-                if (distanceToNextCarBackside < consts.MIN_KEEPING_DISTANCE) {
+                keepingTime = distanceToNextCarBackside / car.speed;
+                if (keepingTime < car.minKeepingTime) {
                     // too close for comfort
-                    nextAccel = Math.min(nextAccel, 0);
+                    nextAccel = Math.min(nextAccel, - car.speed / keepingTime);
                 }
 
                 //console.log('Car:', car.color, 'Distance:', distanceToNextCarBackside, 'Closing speed:', closingSpeed, 'Impact time:', impactTime, 'Accel: ', car.accel);

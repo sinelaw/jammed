@@ -56,12 +56,6 @@ define({
     MIN_KEEPING_DISTANCE: 1,
 
     /**
-     * Overlap allowed for collision detection (required due to numerical calculation's not be accurate)
-     * @type {number}
-     */
-    COLLISION_DISTANCE_DELTA: 5,
-
-    /**
      * General delta for floating-point comparisons
      * @type {number}
      * @const
