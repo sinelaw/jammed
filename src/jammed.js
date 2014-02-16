@@ -3,13 +3,8 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
     function (mathUtil, Vector, Car, Road, consts) {
         'use strict';
 
-        /** @type {number}
-         * @const */
-        var TARGET_FPS = 30;
-
-
         /** @type {number} */
-        var deltaT = (1 / TARGET_FPS);
+        var deltaT = (1 / consts.TARGET_FPS);
         /** @type {number} */
         var deltaTSquared = deltaT * deltaT;
 
@@ -38,38 +33,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
 
         /**
-         * @param {number} size
-         * @returns {{clear: function(), add: function(number), getResult: function():number}}
-         */
-        function movingAverage(size) {
-            var data = [];
-
-            function clear() {
-                var i;
-                for (i = 0; i < size; i += 1) {
-                    data[i] = 0;
-                }
-            }
-
-            clear();
-            return {
-                clear: clear,
-                add: function (value) {
-                    data.push(value);
-                    data.shift();
-                },
-                getResult: function () {
-                    var i, result = data[0];
-                    for (i = 1; i < size; i += 1) {
-                        result += data[i];
-                    }
-                    return result / size;
-                }
-            };
-        }
-
-
-        /**
          * @param {number} width
          * @param {number} height
          * @constructor
@@ -83,51 +46,22 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @returns {HTMLCanvasElement}
-         */
-        function getCanvas() {
-            return /** @type {HTMLCanvasElement} */ document.getElementById('canvas');
-        }
-
-        /**
-         * @param {HTMLCanvasElement} canvas
-         * @returns {CanvasRenderingContext2D}
-         */
-        function getContext(canvas) {
-            return canvas.getContext('2d');
-        }
-
-        /**
          * @param {CanvasRenderingContext2D} context
          * @param {World} world
          */
         function drawWorld(context, world) {
             var i;
-            /** @type {Road} */
-            var road;
 
-            function drawCar(road, car, nextCar) {
-                var position = road.roadToWorldPosition(car.position);
-                var style = car.color;
-                if (car.wrecked) {
-                    style = consts.WRECKED_CAR_STYLE;
-                }
-                context.fillStyle = style;
-                // This really slows things down:
-//            if (Math.abs(car.accel) < DELTA) {
-//                context.shadowColor = 'black';
-//            } else if (car.accel < 0) {
-//                context.shadowColor = 'red';
-//            } else {
-//                context.shadowColor = 'green';
-//            }
-//            context.shadowBlur = 4;
-                context.fillRect(position.x, position.y, car.length, car.length);
+            /**
+             * @param {Road} road
+             * @param {Car} car
+             */
+            function drawCar(road, car) {
+                car.draw(context, road.roadToWorldPosition(car.position));
             }
 
             for (i = 0; i < world.roads.length; i += 1) {
-                road = world.roads[i];
-                road.forEachCar(drawCar);
+                world.roads[i].forEachCar(drawCar);
             }
         }
 
@@ -236,8 +170,8 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
         function init() {
             var i;
-            _canvas = getCanvas();
-            _context = getContext(_canvas);
+            _canvas = /** @type {HTMLCanvasElement} */ document.getElementById('canvas');
+            _context = _canvas.getContext('2d');
             _fpsElem = document.getElementById('fps');
 
             width = _canvas.width;
@@ -258,7 +192,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             start: function () {
                 var currentRunCount;
                 var lastRedrawTime;
-                var elapsedQueue = movingAverage(4);
+                var elapsedQueue = mathUtil.movingAverage(4);
                 var context = _context;
 
                 function drawFPS(fps) {
@@ -291,7 +225,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                             return;
                         }
                         loop();
-                    }, (1000.0 / TARGET_FPS));
+                    }, (1000.0 / consts.TARGET_FPS));
                 }
 
                 stop();

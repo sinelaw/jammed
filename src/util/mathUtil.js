@@ -27,7 +27,39 @@ define([], function () {
          */
         randomColor: function () {
             return '#' + me.randomHexDigit() + me.randomHexDigit() + me.randomHexDigit() + me.randomHexDigit() + me.randomHexDigit() + me.randomHexDigit();
+        },
+
+        /**
+         * @param {number} size
+         * @returns {{clear: function(), add: function(number), getResult: function():number}}
+         */
+        movingAverage: function (size) {
+            var data = [];
+
+            function clear() {
+                var i;
+                for (i = 0; i < size; i += 1) {
+                    data[i] = 0;
+                }
+            }
+
+            clear();
+            return {
+                clear: clear,
+                add: function (value) {
+                    data.push(value);
+                    data.shift();
+                },
+                getResult: function () {
+                    var i, result = data[0];
+                    for (i = 1; i < size; i += 1) {
+                        result += data[i];
+                    }
+                    return result / size;
+                }
+            };
         }
+
 
     };
     return me;

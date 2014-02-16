@@ -3,6 +3,10 @@ define({
 
     /** @type {number}
      * @const */
+    TARGET_FPS: 30,
+
+    /** @type {number}
+     * @const */
     MAX_ACCELERATION: 5,
 
     /** @type {number}
