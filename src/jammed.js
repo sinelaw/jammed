@@ -22,7 +22,12 @@ var jammed = (function () {
 
     /** @type {number}
      * @const */
-    var ACCELERATION = 4;
+    var MAX_ACCELERATION = 5;
+
+    /** @type {number}
+     * @const */
+    var MIN_MAX_ACCELERATION = 2;
+
 
     /** @type {number}
      * @const */
@@ -95,6 +100,9 @@ var jammed = (function () {
     var _context;
     /** @type {ImageData} */
     var _backgroundImage;
+
+    /** @type {HTMLElement} */
+    var _fpsElem;
 
     /**
      * @param {number} x
@@ -197,18 +205,48 @@ var jammed = (function () {
     }
 
     /**
+     * @param {number} size
+     * @returns {{clear: function(), add: function(number), getResult: function():number}}
+     */
+    function movingAverage(size) {
+        var data = [];
+        function clear() {
+            var i;
+            for (i = 0; i < size; i += 1) {
+                data[i] = 0;
+            }
+        }
+        clear();
+        return {
+            clear: clear,
+            add: function (value) {
+                data.push(value);
+                data.shift();
+            },
+            getResult: function () {
+                var i, result = data[0];
+                for (i = 1; i < size; i += 1) {
+                    result += data[i];
+                }
+                return result / size;
+            }
+        };
+    }
+
+    /**
      * @param {number} length
      * @param {number} position
      * @param {number} speed
      * @constructor
-     * @returns {{length:number, position:number, speed:number, maxSpeed: number, accel: number, color:string, minKeepingTime: number}}
+     * @returns {{length:number, position:number, speed:number, maxSpeed: number, accel: number, maxAcceleration:number, color:string, minKeepingTime: number}}
      */
     function Car(length, position, speed) {
         this.length = length;
         this.position = position;
         this.speed = speed;
         this.accel = 0;
-        this.maxSpeed = randomInt(MAX_SPEED - MIN_MAX_SPEED) + MIN_MAX_SPEED;
+        this.maxSpeed = randomInt(MAX_SPEED, MIN_MAX_SPEED);
+        this.maxAcceleration = randomInt(MAX_ACCELERATION, MIN_MAX_ACCELERATION);
         this.color = randomColor();
         this.wrecked = false;
         this.minKeepingTime = MIN_KEEPING_TIME + Math.random() * (MAX_KEEPING_TIME - MIN_KEEPING_TIME);
@@ -223,12 +261,14 @@ var jammed = (function () {
     /**
      * @param {Array.<Vector>} points
      * @param {Array.<Car>} cars
+     * @param {number} width
      * @constructor
-     * @returns {{ points: Array.<Vector>, cars: Array.<Car>, length: number, color: string }}
+     * @returns {{ points: Array.<Vector>, cars: Array.<Car>, width: number, length: number, color: string }}
      */
-    function Road(points, cars) {
+    function Road(points, cars, width) {
         this.points = points;
-        this.cars = [];
+        this.cars = cars;
+        this.width = width;
         this.length = getLength(points);
         this.color = 'rgba(' + [randomInt(255, 200), randomInt(255, 200), randomInt(255, 200), 1].join(',') + ')';
     }
@@ -274,8 +314,6 @@ var jammed = (function () {
     Road.prototype.roadToWorldPosition = function (roadPosition) {
         /** @type {Vector} */
         var targetSegmentStart;
-        /** @type {Vector} */
-        var targetSegmentDirection;
         var segment;
         var pos = roadPosition;
         forEachSegment(this.points, function (prevPoint, point) {
@@ -288,8 +326,7 @@ var jammed = (function () {
             pos -= segmentSize;
         });
         if (targetSegmentStart && segment) {
-            targetSegmentDirection = segment.toUnit();
-            return new Vector(targetSegmentStart.x + pos * targetSegmentDirection.x, targetSegmentStart.y + pos * targetSegmentDirection.y);
+            return targetSegmentStart.plus(segment.toUnit().mul(pos));
         }
         return null;
     };
@@ -358,7 +395,7 @@ var jammed = (function () {
     }
 
     /**
-     * @param {HTMLCanvas} canvas
+     * @param {HTMLCanvasElement} canvas
      * @param {CanvasRenderingContext2D} context
      * @param {World} world
      * @returns {ImageData}
@@ -388,7 +425,7 @@ var jammed = (function () {
         if (car.wrecked) {
             return;
         }
-        car.accel = ACCELERATION;
+        car.accel = car.maxAcceleration;
         if (nextCar) {
             closingSpeed = car.speed - nextCar.speed;
             distanceToNextCarBackside = nextCar.position - car.position;
@@ -402,16 +439,16 @@ var jammed = (function () {
             }
             if (impactTime < 0) {
                 // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
-                car.accel = ACCELERATION;
+                car.accel = car.maxAcceleration;
             } else if (impactTime <= MIN_IMPACT_TIME) {
-                car.accel = -ACCELERATION;
+                car.accel = -car.maxAcceleration;
             }
 
             if ((car.speed > DELTA) && (distanceToNextCarBackside / car.speed < car.minKeepingTime)) {
-                car.accel = -ACCELERATION;
+                car.accel = -car.maxAcceleration;
             }
             if (distanceToNextCarBackside < MIN_KEEPING_DISTANCE) {
-                car.accel = -ACCELERATION;
+                car.accel = -car.maxAcceleration;
             }
         }
         car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel * deltaT));
@@ -460,7 +497,8 @@ var jammed = (function () {
         var lastCar = road.cars.length ? road.cars[road.cars.length - 1] : null;
         var lastCarPos = lastCar ? lastCar.position : 0;
         var lastCarLength = lastCar ? lastCar.length : 0;
-        road.cars.push(new Car(randomInt(MAX_CAR_LENGTH - MIN_CAR_LENGTH) + MIN_CAR_LENGTH, lastCarPos + lastCarLength + 1 + randomInt(MIN_KEEPING_DISTANCE), 0));
+        road.cars.push(new Car(randomInt(MAX_CAR_LENGTH, MIN_CAR_LENGTH),
+            lastCarPos + lastCarLength + 1 + randomInt(MIN_KEEPING_DISTANCE), 0));
     }
 
     function stop() {
@@ -525,6 +563,7 @@ var jammed = (function () {
         var i;
         _canvas = getCanvas();
         _context = getContext(_canvas);
+        _fpsElem = document.getElementById('fps');
 
         width = _canvas.width;
         height = _canvas.height;
@@ -544,23 +583,23 @@ var jammed = (function () {
         start: function () {
             var currentRunCount;
             var lastRedrawTime;
-            var elapsedQueue = [0,0,0,0];
+            var elapsedQueue = movingAverage(4);
             var context = _context;
 
             function drawFPS(fps) {
-                context.fillStyle = 'black';
-                context.shadowBlur = 0;
-                context.fillText('' + fps + ' fps', 10, 10);
+                _fpsElem.innerHTML = '' + fps + ' fps';
+//                context.fillStyle = 'black';
+//                context.shadowBlur = 0;
+//                context.fillText('' + fps + ' fps', 10, 10);
             }
 
             function updateFPS() {
                 var now = Date.now();
                 var elapsed = now - lastRedrawTime;
-                var averageElapsed = (elapsedQueue[0] + elapsedQueue[1] + elapsedQueue[2] + elapsedQueue[3]) / 4;
+                var averageElapsed = elapsedQueue.getResult();
                 var fps = Math.floor(1000.0 / averageElapsed);
                 lastRedrawTime = Date.now();
-                elapsedQueue.push(elapsed);
-                elapsedQueue.shift();
+                elapsedQueue.add(elapsed);
                 deltaT = elapsed / 1000.0;
                 /** @type {number} */
                 deltaTSquared = deltaT * deltaT;
