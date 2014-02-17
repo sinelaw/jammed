@@ -30,10 +30,10 @@ define({
      * Minimum travel time to next car's rear, that cars keep while in motion.
      * @type {number}
      * @const */
-    MAX_KEEPING_TIME: 3,
+    MAX_KEEPING_TIME: 2,
     /** @type {number}
      * @const */
-    MIN_KEEPING_TIME: 0.25,
+    MIN_KEEPING_TIME: 0.5,
 
     /** @type {number}
      * @const */
