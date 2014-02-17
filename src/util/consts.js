@@ -68,7 +68,7 @@ define({
 
     /** @type {number}
      * @const */
-    NUM_RANDOM_CARS_PER_ROAD: 5,
+    NUM_RANDOM_CARS_PER_ROAD: 10,
 
     /** @type {number}
      * @const */
@@ -76,6 +76,6 @@ define({
 
     /** @type {number}
      * @const */
-    LANES_PER_ROAD: 2
+    LANES_PER_ROAD: 3
 
 });

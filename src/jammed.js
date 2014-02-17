@@ -358,11 +358,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             world = new World(_canvas.width, _canvas.height);
             //for (i = 0; i < consts.NUM_RANDOM_ROADS; i += 1) {
             world.roads.push(Road.random([
-                new Vector(margin, margin),
+                new Vector(margin * 1.5, margin),
                 new Vector(width - margin, margin),
                 new Vector(width - margin, height - margin),
                 new Vector(margin, height - margin),
-                new Vector(margin, margin)
+                new Vector(margin, margin * 1.5)
             ]));
             //}
             _context.setTransform(1, 0, 0, 1, 0, 0);

@@ -37,7 +37,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
      * @param {Vector} position
      */
     Car.prototype.draw = function (context, position) {
-        var style = this.accel > 0 ? 'green' : 'red'; //this.color;
+        var style = this.color; //this.accel > 0 ? 'green' : 'red'; //this.color;
         if (this.wrecked) {
             style = consts.WRECKED_CAR_STYLE;
         }
