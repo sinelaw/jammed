@@ -52,6 +52,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
 //            }
 //            context.shadowBlur = 4;
         context.fillRect(position.x, position.y, this.length, this.length);
+        //context.fillRect(position.x, position.y, 2 + this.speed, 2);
     };
 
     /**
