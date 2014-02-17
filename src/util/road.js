@@ -55,17 +55,21 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
     }
 
     /**
-     * @param {function(Road, Car, number)} f
+     * @param {function(Road, Car, number):T} f
+     * @returns {Array.<T>}
+     * @template T
      */
     Road.prototype.forEachCar = function (f) {
         /** @type {number} */
         var i;
+        var result = [];
         if (this.cars.length < 1) {
-            return;
+            return result;
         }
         for (i = 0; i < this.cars.length; i += 1) {
-            f(this, this.cars[i], i);
+            result.push(f(this, this.cars[i], i));
         }
+        return result;
     };
 
     /**

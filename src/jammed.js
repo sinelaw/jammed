@@ -140,7 +140,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         function spaceAvailableInLane(road, laneNum, carIndex) {
             /** @type {Car} */
             var car = road.cars[carIndex];
-            var minSwitchSpace = car.length * (2 + (Math.min(1, car.speed)));
+            var minSwitchSpace = car.length * (3 + (Math.min(1, car.speed)));
             /** @type {Car} */
             var nextCar = getNextCarInLane(road, laneNum, carIndex);
             /** @type {Car} */
@@ -157,7 +157,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             }
             forwardSpace = normalizeRoadPosition(road, nextCar.position - car.position) - car.length;
             backwardSpace = normalizeRoadPosition(road, car.position - prevCar.position) - prevCar.length;
-            if (forwardSpace < minSwitchSpace || backwardSpace < minSwitchSpace) {
+            if ((forwardSpace + nextCar.speed < minSwitchSpace) || (backwardSpace - prevCar.speed < minSwitchSpace)) {
                 return 0;
             }
             return forwardSpace;
@@ -167,73 +167,102 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
          * @param {Road} road
          * @param {Car} car
          * @param {number} carIndex
+         * @returns {number}
          */
-        function simulateCar(road, car, carIndex) {
-            var distanceToNextCarBackside = null;
+        function decideAcceleration(road, car, carIndex) {
+            var distanceToNextCarBackside;
             var closingSpeed;
-            var nextCarAbsolutePosition;
+            var carInFrontRelativePosition;
             var impactTime;
             var keepingTime;
             var nextAccel;
-            var spaceInCurrentLane = spaceAvailableInLane(road, car.lane, carIndex);
             var carInFront;
-            var nextLane = car.lane;
             if (car.wrecked) {
-                return;
+                return 0;
+            }
+            carInFront = getNextCarInLane(road, car.lane, carIndex);
+            if (!carInFront) {
+                return car.maxAcceleration;
+            }
+            nextAccel = car.maxAcceleration;
+            carInFrontRelativePosition = carInFront.position < car.position ? carInFront.position + road.length : carInFront.position;
+            closingSpeed = car.speed - carInFront.speed;
+            distanceToNextCarBackside = carInFrontRelativePosition - car.position - car.length;
+            if (distanceToNextCarBackside < 0) {
+                // Wreck!
+                console.log('Collision!', car.color, carInFront.color);
+                car.wreck();
+                carInFront.wreck();
+                //debugger;
+                return 0;
+            }
+            if (closingSpeed > 0) {
+                impactTime = distanceToNextCarBackside / closingSpeed;
+                if (impactTime < consts.MIN_IMPACT_TIME) {
+                    nextAccel = -closingSpeed / (impactTime / 2);
+                }
+            }
+            //else {
+            // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
+            //}
+
+            keepingTime = distanceToNextCarBackside / car.speed;
+            if (keepingTime < car.minKeepingTime) {
+                // too close for comfort
+                nextAccel = Math.min(nextAccel, -car.speed / keepingTime);
             }
 
+            if (distanceToNextCarBackside < consts.MIN_KEEPING_DISTANCE) {
+                nextAccel = Math.min(nextAccel, distanceToNextCarBackside - consts.MIN_KEEPING_DISTANCE);
+            }
+
+            //console.log('Car:', car.color, 'Distance:', distanceToNextCarBackside, 'Closing speed:', closingSpeed, 'Impact time:', impactTime, 'Accel: ', car.accel);
+            if (nextAccel > 0) {
+                nextAccel = Math.min(nextAccel, car.maxAcceleration);
+            }
+            return nextAccel;
+        }
+
+        /**
+         * @param {Road} road
+         * @param {Car} car
+         * @param {number} carIndex
+         * @returns {number}
+         */
+        function decideNextLane(road, car, carIndex) {
+            var spaceInCurrentLane;
+            var spaceInOtherLane;
+            var nextLane = car.lane;
+            if (car.wrecked) {
+                return car.lane;
+            }
+            spaceInCurrentLane = spaceAvailableInLane(road, car.lane, carIndex);
             if (car.lane < road.numLanes - 1) {
-                if (spaceAvailableInLane(road, car.lane + 1, carIndex) > car.length + spaceInCurrentLane) {
+                spaceInOtherLane = spaceAvailableInLane(road, car.lane + 1, carIndex);
+                if (spaceInOtherLane > spaceInCurrentLane) {
+                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
+                        'Position: ', car.position,
+                        'Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
                     nextLane = car.lane + 1;
                 }
             }
             if (nextLane === car.lane && (car.lane > 0)) {
-                if (spaceAvailableInLane(road, car.lane - 1, carIndex) > car.length + spaceInCurrentLane) {
+                spaceInOtherLane = spaceAvailableInLane(road, car.lane - 1, carIndex);
+                if (spaceInOtherLane > spaceInCurrentLane) {
+                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
+                        'Position: ', car.position,
+                        ' Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
                     nextLane = car.lane - 1;
                 }
             }
-            car.lane = nextLane;
+            return nextLane;
+        }
 
-            carInFront = getNextCarInLane(road, car.lane, carIndex);
-            nextAccel = car.maxAcceleration;
-            if (carInFront) {
-                nextCarAbsolutePosition = carInFront.position < car.position ? carInFront.position + road.length : carInFront.position;
-                closingSpeed = car.speed - carInFront.speed;
-                distanceToNextCarBackside = nextCarAbsolutePosition - car.position - car.length;
-                if (distanceToNextCarBackside < 0) {
-                    // Wreck!
-                    car.wreck();
-                    carInFront.wreck();
-                    //debugger;
-                    return;
-                }
-
-                if (closingSpeed > 0) {
-                    impactTime = distanceToNextCarBackside / closingSpeed;
-                    if (impactTime < consts.MIN_IMPACT_TIME) {
-                        nextAccel = -closingSpeed / (impactTime / 2);
-                    }
-                }
-                //else {
-                // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
-                //}
-
-                keepingTime = distanceToNextCarBackside / car.speed;
-                if (keepingTime < car.minKeepingTime) {
-                    // too close for comfort
-                    nextAccel = Math.min(nextAccel, -car.speed / keepingTime);
-                }
-
-                if (distanceToNextCarBackside < consts.MIN_KEEPING_DISTANCE) {
-                    nextAccel = Math.min(nextAccel, distanceToNextCarBackside - consts.MIN_KEEPING_DISTANCE);
-                }
-
-                //console.log('Car:', car.color, 'Distance:', distanceToNextCarBackside, 'Closing speed:', closingSpeed, 'Impact time:', impactTime, 'Accel: ', car.accel);
-                if (nextAccel > 0) {
-                    nextAccel = Math.min(nextAccel, car.maxAcceleration);
-                }
-            }
-            car.accel = nextAccel;
+        /**
+         * @param {Road} road
+         * @param {Car} car
+         */
+        function simulateNewtonMechanics(road, car) {
             car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel * deltaT));
             car.position += car.speed * deltaT + 0.5 * car.accel * deltaTSquared;
 
@@ -245,13 +274,42 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             }
         }
 
+        /**
+         * @param {Road} road
+         * @param {Car} car
+         * @param {number} carIndex
+         * @returns {Function|null}
+         */
+        function simulateCar(road, car, carIndex) {
+            var nextLane = decideNextLane(road, car, carIndex);
+            var nextAccel = decideAcceleration(road, car, carIndex);
+            if (car.wrecked) {
+                return null;
+            }
+
+            car.accel = nextAccel;
+            simulateNewtonMechanics(road, car);
+            
+            return function () {
+                car.lane = nextLane;
+            };
+        }
+
         function simulateStep(world) {
-            var i;
+            var i, j;
+            var carUpdater;
+            var carUpdaters;
             /** @type {Road} */
             var road;
             for (i = 0; i < world.roads.length; i += 1) {
                 road = world.roads[i];
-                road.forEachCar(simulateCar);
+                carUpdaters = road.forEachCar(simulateCar);
+                for (j = 0; j < carUpdaters.length; j += 1) {
+                    carUpdater = carUpdaters[j];
+                    if (carUpdater) {
+                        carUpdater();
+                    }
+                }
                 road.sortCars();
             }
         }
