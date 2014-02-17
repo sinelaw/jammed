@@ -1,4 +1,4 @@
-/*global define */
+/*global define, console */
 define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
     function (mathUtil, Vector, Car, Road, consts) {
         'use strict';
@@ -142,16 +142,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
         /**
          * @param {Road} road
-         * @param {number} position
-         * @returns {number}
-         */
-        function normalizeRoadPosition(road, position) {
-            var positivePosition = (position < 0) ? position + road.length : position;
-            return (positivePosition > road.length) ? positivePosition - road.length : positivePosition;
-        }
-
-        /**
-         * @param {Road} road
          * @param {number} laneNum
          * @param {number} carIndex
          * @returns {number}
@@ -161,22 +151,20 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var car = road.cars[carIndex];
             var minSwitchSpace = car.length * (2 + 1.0 * (Math.min(1, car.speed)));
             var nextCarInfo = getNextCarInLane(road, laneNum, carIndex);
-            var nextCar = nextCarInfo.car;
             var prevCarInfo = getPrevCarInLane(road, laneNum, carIndex);
-            var prevCar = prevCarInfo.car;
             /** @type {number} */
             var forwardSpace;
             /** @type {number} */
             var backwardSpace;
 
-            if (!nextCar || !prevCar) {
-                if (!nextCar && !prevCar) {
+            if (!nextCarInfo || !prevCarInfo) {
+                if (!nextCarInfo && !prevCarInfo) {
                     return road.length - car.length;
                 }
                 return 0;
             }
-            forwardSpace = (nextCarInfo.index < carIndex ? -1 : 1) * (nextCar.position - car.position) - car.length;
-            backwardSpace = (carIndex < prevCarInfo.index ? -1 : 1) * (car.position - prevCar.position) - prevCar.length;
+            forwardSpace = (nextCarInfo.index < carIndex ? -1 : 1) * (nextCarInfo.car.position - car.position) - car.length;
+            backwardSpace = (carIndex < prevCarInfo.index ? -1 : 1) * (car.position - prevCarInfo.car.position) - prevCarInfo.car.length;
 
             if ((forwardSpace < minSwitchSpace) || (backwardSpace < minSwitchSpace)) {
                 return 0;
@@ -258,23 +246,24 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 return car.lane;
             }
             spaceInCurrentLane = spaceAvailableInLane(road, car.lane, carIndex);
+            if (spaceInCurrentLane > car.length * 10) {
+                return car.lane; // plenty of space in current lane.
+            }
             if (car.lane < road.numLanes - 1) {
                 spaceInOtherLane = spaceAvailableInLane(road, car.lane + 1, carIndex);
                 if (spaceInOtherLane > spaceInCurrentLane) {
-                    spaceInOtherLane = spaceAvailableInLane(road, car.lane + 1, carIndex);
-                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
-                        'Position: ', car.position,
-                        'Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
+//                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
+//                        'Position: ', car.position,
+//                        'Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
                     nextLane = car.lane + 1;
                 }
             }
             if (nextLane === car.lane && (car.lane > 0)) {
                 spaceInOtherLane = spaceAvailableInLane(road, car.lane - 1, carIndex);
                 if (spaceInOtherLane > spaceInCurrentLane) {
-                    spaceInOtherLane = spaceAvailableInLane(road, car.lane - 1, carIndex);
-                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
-                        'Position: ', car.position,
-                        ' Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
+//                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
+//                        'Position: ', car.position,
+//                        ' Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
                     nextLane = car.lane - 1;
                 }
             }
@@ -359,6 +348,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
         function init() {
             var i;
+            var margin = 10 * consts.LANES_PER_ROAD;
             _canvas = /** @type {HTMLCanvasElement} */ document.getElementById('canvas');
             _context = _canvas.getContext('2d');
             _fpsElem = document.getElementById('fps');
@@ -366,9 +356,15 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             width = _canvas.width;
             height = _canvas.height;
             world = new World(_canvas.width, _canvas.height);
-            for (i = 0; i < consts.NUM_RANDOM_ROADS; i += 1) {
-                world.roads.push(Road.random(width, height));
-            }
+            //for (i = 0; i < consts.NUM_RANDOM_ROADS; i += 1) {
+            world.roads.push(Road.random([
+                new Vector(margin, margin),
+                new Vector(width - margin, margin),
+                new Vector(width - margin, height - margin),
+                new Vector(margin, height - margin),
+                new Vector(margin, margin)
+            ]));
+            //}
             _context.setTransform(1, 0, 0, 1, 0, 0);
             _context.clearRect(0, 0, width, height);
             _backgroundImage = drawBackground(_canvas, _context, world);

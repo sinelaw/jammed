@@ -154,14 +154,19 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         this.cars.push(car);
     };
 
-    Road.random = function (width, height) {
-        var i, j, numSegments = mathUtil.randomInt(consts.MAX_RANDOM_ROAD_POINTS) + 2;
+    /**
+     * @param {number} width
+     * @param {number} height
+     * @returns {Array.<Vector>}
+     */
+    Road.getRandomRoadPoints = function(width, height) {
+        var i;
+        var numSegments = mathUtil.randomInt(consts.MAX_RANDOM_ROAD_POINTS) + 2;
         /** @type {Array.<Vector>} */
         var points = [Vector.random(width, height)];
         var prevPoint = points[0];
         /** @type {Vector} */
         var point;
-        var road;
         for (i = 0; i < numSegments; i += 1) {
             do {
                 point = Vector.random(width, height).minus(prevPoint);
@@ -170,12 +175,22 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
             points.push(point);
             prevPoint = point;
         }
-        //points.push(points[0]); // close the loop
-        road = new Road(points, [], consts.LANES_PER_ROAD);
+        return points;
+    };
 
-        for (j = 0; j < road.numLanes; j += 1) {
+    /**
+     * @param {Array.<Vector>} points
+     * @returns {Road}
+     */
+    Road.random = function(points) {
+        var i, laneNum;
+        var road = new Road(points, [], consts.LANES_PER_ROAD);
+        //var points = getRandomRoadPoints(width, height);
+        //points.push(points[0]); // close the loop
+
+        for (laneNum = 0; laneNum < road.numLanes; laneNum += 1) {
             for (i = 0; i < consts.NUM_RANDOM_CARS_PER_ROAD; i += 1) {
-                addRandomCar(road, j);
+                addRandomCar(road, laneNum);
             }
         }
         road.sortCars();
