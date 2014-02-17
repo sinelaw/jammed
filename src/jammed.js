@@ -140,7 +140,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         function spaceAvailableInLane(road, laneNum, carIndex) {
             /** @type {Car} */
             var car = road.cars[carIndex];
-            var minSwitchSpace = car.length * (3 + (Math.min(1, car.speed)));
+            var minSwitchSpace = car.length * (2 + 1.0 * (Math.min(1, car.speed)));
             /** @type {Car} */
             var nextCar = getNextCarInLane(road, laneNum, carIndex);
             /** @type {Car} */
@@ -149,6 +149,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var forwardSpace;
             /** @type {number} */
             var backwardSpace;
+            
             if (!nextCar || !prevCar) {
                 if (!nextCar && !prevCar) {
                     return road.length - car.length;
@@ -157,7 +158,8 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             }
             forwardSpace = normalizeRoadPosition(road, nextCar.position - car.position) - car.length;
             backwardSpace = normalizeRoadPosition(road, car.position - prevCar.position) - prevCar.length;
-            if ((forwardSpace + nextCar.speed < minSwitchSpace) || (backwardSpace - prevCar.speed < minSwitchSpace)) {
+
+            if ((forwardSpace < minSwitchSpace) || (backwardSpace < (prevCar.speed * 1))) {
                 return 0;
             }
             return forwardSpace;
@@ -172,27 +174,27 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         function decideAcceleration(road, car, carIndex) {
             var distanceToNextCarBackside;
             var closingSpeed;
-            var carInFrontRelativePosition;
+            var nextCarRelativePosition;
             var impactTime;
             var keepingTime;
             var nextAccel;
-            var carInFront;
+            var nextCar;
             if (car.wrecked) {
                 return 0;
             }
-            carInFront = getNextCarInLane(road, car.lane, carIndex);
-            if (!carInFront) {
+            nextCar = getNextCarInLane(road, car.lane, carIndex);
+            if (!nextCar) {
                 return car.maxAcceleration;
             }
             nextAccel = car.maxAcceleration;
-            carInFrontRelativePosition = carInFront.position < car.position ? carInFront.position + road.length : carInFront.position;
-            closingSpeed = car.speed - carInFront.speed;
-            distanceToNextCarBackside = carInFrontRelativePosition - car.position - car.length;
+            nextCarRelativePosition = nextCar.position + (nextCar.position < car.position ? road.length : 0);
+            closingSpeed = car.speed - nextCar.speed;
+            distanceToNextCarBackside = nextCarRelativePosition - car.position - car.length;
             if (distanceToNextCarBackside < 0) {
                 // Wreck!
-                console.log('Collision!', car.color, carInFront.color);
+                console.log('Collision!', car.color, nextCar.color);
                 car.wreck();
-                carInFront.wreck();
+                nextCar.wreck();
                 //debugger;
                 return 0;
             }
