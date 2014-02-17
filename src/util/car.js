@@ -1,7 +1,9 @@
 /*global define */
+/**
+ * @module Car
+ */
 define(['./mathUtil', './consts'], function (mathUtil, consts) {
     "use strict";
-
 
     /**
      * @param {number} length

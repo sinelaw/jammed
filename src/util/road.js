@@ -1,4 +1,7 @@
 /*global define */
+/**
+ * @module Road
+ */
 define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vector, Car, consts) {
     "use strict";
 
@@ -69,12 +72,13 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
      * @param {CanvasRenderingContext2D} context
      */
     Road.prototype.draw = function (context) {
-        var laneNum, laneStart, laneEnd;
+        var laneNum, laneOffset;
         var i;
         /** @type {Vector} */
         var point;
         /** @type {Vector} */
         var prevPoint;
+        var segment;
         if (!this.points.length) {
             return;
         }
@@ -84,13 +88,13 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         for (i = 1; i < this.points.length; i += 1) {
             prevPoint = this.points[i - 1].min(this.points[i]);
             point = this.points[i].max(this.points[i - 1]);
+            segment = point.minus(prevPoint);
             for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
-                laneStart = laneNum * laneWidth;
-                laneEnd = (laneNum + 1) * laneWidth;
-                context.fillRect(prevPoint.x + laneStart,
-                    prevPoint.y + laneStart,
-                    point.x - prevPoint.x + laneEnd,
-                    point.y - prevPoint.y + laneEnd);
+                laneOffset = calcLaneOffset(segment, laneNum * laneWidth);
+                context.fillRect(prevPoint.x + laneOffset.x,
+                    prevPoint.y + laneOffset.y,
+                    segment.x + laneWidth,
+                    segment.y + laneWidth);
             }
         }
     };
@@ -101,6 +105,11 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         });
     };
 
+    function calcLaneOffset(unitSegment, laneStart) {
+        return new Vector(Math.abs(unitSegment.x) < consts.DELTA ? laneStart : 0,
+            Math.abs(unitSegment.y) < consts.DELTA ? laneStart : 0);
+    }
+
     /** @param {number} roadPosition
      *  @param {number} laneNum
      *  @returns {Vector}
@@ -110,6 +119,7 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         var targetSegmentStart;
         /** @type {Vector} */
         var segment;
+        var unitSegment;
         var pos = roadPosition;
         var laneStart;
         Vector.forEachSegment(this.points, function (prevPoint, point) {
@@ -124,7 +134,9 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         });
         if (targetSegmentStart && segment) {
             laneStart = laneNum * laneWidth;
-            return targetSegmentStart.plus(segment.toUnit().mul(pos)).plus(new Vector(laneStart, laneStart));
+            unitSegment = segment.toUnit();
+            return targetSegmentStart.plus(unitSegment.mul(pos)).plus(
+                calcLaneOffset(unitSegment, laneStart));
         }
         return null;
     };

@@ -93,13 +93,74 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var i;
             var car;
 
-            for (i = carIndex + 1; i < road.cars.length - 1; i += 1) {
-                car = road.cars[i % road.cars.length];
+            for (i = 0; i < road.cars.length - 1; i += 1) {
+                car = road.cars[(i + carIndex + 1) % road.cars.length];
                 if (car.lane === lane) {
                     return car;
                 }
             }
             return null;
+        }
+
+        /**
+         * @param {Road} road
+         * @param {number} lane
+         * @param {number} carIndex
+         * @returns {Car}
+         */
+        function getPrevCarInLane(road, lane, carIndex) {
+            var i;
+            var car;
+
+            for (i = 0; i < road.cars.length - 1; i += 1) {
+                car = road.cars[(carIndex - 1 - i + road.cars.length) % road.cars.length];
+                if (car.lane === lane) {
+                    return car;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * @param {Road} road
+         * @param {number} position
+         * @returns {number}
+         */
+        function normalizeRoadPosition(road, position) {
+            var positivePosition = (position < 0) ? position + road.length : position;
+            return (positivePosition > road.length) ? positivePosition - road.length : positivePosition;
+        }
+
+        /**
+         * @param {Road} road
+         * @param {number} laneNum
+         * @param {number} carIndex
+         * @returns {number}
+         */
+        function spaceAvailableInLane(road, laneNum, carIndex) {
+            /** @type {Car} */
+            var car = road.cars[carIndex];
+            var minSwitchSpace = car.length * (2 + (Math.min(1, car.speed)));
+            /** @type {Car} */
+            var nextCar = getNextCarInLane(road, laneNum, carIndex);
+            /** @type {Car} */
+            var prevCar = getPrevCarInLane(road, laneNum, carIndex);
+            /** @type {number} */
+            var forwardSpace;
+            /** @type {number} */
+            var backwardSpace;
+            if (!nextCar || !prevCar) {
+                if (!nextCar && !prevCar) {
+                    return road.length - car.length;
+                }
+                return 0;
+            }
+            forwardSpace = normalizeRoadPosition(road, nextCar.position - car.position) - car.length;
+            backwardSpace = normalizeRoadPosition(road, car.position - prevCar.position) - prevCar.length;
+            if (forwardSpace < minSwitchSpace || backwardSpace < minSwitchSpace) {
+                return 0;
+            }
+            return forwardSpace;
         }
 
         /**
@@ -114,19 +175,35 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var impactTime;
             var keepingTime;
             var nextAccel;
-            var nextCar = getNextCarInLane(road, car.lane, carIndex);
+            var spaceInCurrentLane = spaceAvailableInLane(road, car.lane, carIndex);
+            var carInFront;
+            var nextLane = car.lane;
             if (car.wrecked) {
                 return;
             }
+
+            if (car.lane < road.numLanes - 1) {
+                if (spaceAvailableInLane(road, car.lane + 1, carIndex) > car.length + spaceInCurrentLane) {
+                    nextLane = car.lane + 1;
+                }
+            }
+            if (nextLane === car.lane && (car.lane > 0)) {
+                if (spaceAvailableInLane(road, car.lane - 1, carIndex) > car.length + spaceInCurrentLane) {
+                    nextLane = car.lane - 1;
+                }
+            }
+            car.lane = nextLane;
+
+            carInFront = getNextCarInLane(road, car.lane, carIndex);
             nextAccel = car.maxAcceleration;
-            if (nextCar) {
-                nextCarAbsolutePosition = nextCar.position < car.position ? nextCar.position + road.length : nextCar.position;
-                closingSpeed = car.speed - nextCar.speed;
+            if (carInFront) {
+                nextCarAbsolutePosition = carInFront.position < car.position ? carInFront.position + road.length : carInFront.position;
+                closingSpeed = car.speed - carInFront.speed;
                 distanceToNextCarBackside = nextCarAbsolutePosition - car.position - car.length;
                 if (distanceToNextCarBackside < 0) {
                     // Wreck!
                     car.wreck();
-                    nextCar.wreck();
+                    carInFront.wreck();
                     //debugger;
                     return;
                 }
@@ -134,17 +211,17 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 if (closingSpeed > 0) {
                     impactTime = distanceToNextCarBackside / closingSpeed;
                     if (impactTime < consts.MIN_IMPACT_TIME) {
-                        nextAccel = - closingSpeed / (impactTime / 2);
+                        nextAccel = -closingSpeed / (impactTime / 2);
                     }
                 }
                 //else {
-                    // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
+                // never going to impact, closing speed is negative (actually gaining distance) or very, very small.
                 //}
 
                 keepingTime = distanceToNextCarBackside / car.speed;
                 if (keepingTime < car.minKeepingTime) {
                     // too close for comfort
-                    nextAccel = Math.min(nextAccel, - car.speed / keepingTime);
+                    nextAccel = Math.min(nextAccel, -car.speed / keepingTime);
                 }
 
                 if (distanceToNextCarBackside < consts.MIN_KEEPING_DISTANCE) {
