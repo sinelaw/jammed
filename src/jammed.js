@@ -147,6 +147,10 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                     nextAccel = Math.min(nextAccel, - car.speed / keepingTime);
                 }
 
+                if (distanceToNextCarBackside < consts.MIN_KEEPING_DISTANCE) {
+                    nextAccel = Math.min(nextAccel, distanceToNextCarBackside - consts.MIN_KEEPING_DISTANCE);
+                }
+
                 //console.log('Car:', car.color, 'Distance:', distanceToNextCarBackside, 'Closing speed:', closingSpeed, 'Impact time:', impactTime, 'Accel: ', car.accel);
                 if (nextAccel > 0) {
                     nextAccel = Math.min(nextAccel, car.maxAcceleration);
