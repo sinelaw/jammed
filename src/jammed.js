@@ -57,7 +57,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
              * @param {Car} car
              */
             function drawCar(road, car) {
-                car.draw(context, road.roadToWorldPosition(car.position));
+                car.draw(context, road.roadToWorldPosition(car.position, car.lane));
             }
 
             for (i = 0; i < world.roads.length; i += 1) {
@@ -85,16 +85,36 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
         /**
          * @param {Road} road
-         * @param {Car} car
-         * @param {?Car} nextCar
+         * @param {number} lane
+         * @param {number} carIndex
+         * @returns {Car}
          */
-        function simulateCar(road, car, nextCar) {
+        function getNextCarInLane(road, lane, carIndex) {
+            var i;
+            var car;
+
+            for (i = carIndex + 1; i < road.cars.length - 1; i += 1) {
+                car = road.cars[i % road.cars.length];
+                if (car.lane === lane) {
+                    return car;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * @param {Road} road
+         * @param {Car} car
+         * @param {number} carIndex
+         */
+        function simulateCar(road, car, carIndex) {
             var distanceToNextCarBackside = null;
             var closingSpeed;
             var nextCarAbsolutePosition;
             var impactTime;
             var keepingTime;
             var nextAccel;
+            var nextCar = getNextCarInLane(road, car.lane, carIndex);
             if (car.wrecked) {
                 return;
             }

@@ -74,6 +74,6 @@ define({
      * @const */
     NUM_RANDOM_ROADS: 1,
 
-    ROAD_WIDTH: 6
+    LANES_PER_ROAD: 2
 
 });

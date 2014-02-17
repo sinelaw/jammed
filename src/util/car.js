@@ -6,14 +6,16 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
     /**
      * @param {number} length
      * @param {number} position
+     * @param {number} lane
      * @param {number} speed
      * @constructor
-     * @returns {{length:number, position:number, speed:number, maxSpeed: number, accel: number, maxAcceleration:number, color:string, minKeepingTime: number}}
+     * @returns {{length:number, position:number, speed:number, lane: number, maxSpeed: number, accel: number, maxAcceleration:number, color:string, minKeepingTime: number}}
      */
-    function Car(length, position, speed) {
+    function Car(length, position, lane, speed) {
         this.length = length;
         this.position = position;
         this.speed = speed;
+        this.lane = lane;
         this.accel = 0;
         this.maxSpeed = mathUtil.randomInt(consts.MAX_SPEED, consts.MIN_MAX_SPEED);
         this.maxAcceleration = mathUtil.randomInt(consts.MAX_ACCELERATION, consts.MIN_MAX_ACCELERATION);
@@ -54,7 +56,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
      * @returns {Car}
      */
     Car.random = function () {
-        return new Car(mathUtil.randomInt(consts.MAX_CAR_LENGTH, consts.MIN_CAR_LENGTH), 0, 0);
+        return new Car(mathUtil.randomInt(consts.MAX_CAR_LENGTH, consts.MIN_CAR_LENGTH), 0, 0, 0);
     };
 
     return Car;
