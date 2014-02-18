@@ -36,7 +36,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
      * @param {CanvasRenderingContext2D} context
      * @param {Vector} position
      */
-    Car.prototype.draw = function (context, position) {
+    Car.prototype.draw = function (context) {
         var style = this.color; //this.accel > 0 ? 'green' : 'red'; //this.color;
         if (this.wrecked) {
             style = consts.WRECKED_CAR_STYLE;
@@ -51,7 +51,8 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
 //                context.shadowColor = 'green';
 //            }
 //            context.shadowBlur = 4;
-        context.fillRect(position.x, position.y, this.length, this.length);
+        context.fillRect(0, 0, this.length*3/4, this.length);
+        context.fillRect(this.length*3/4, 0, this.length/4, this.length / 2);
         //context.fillRect(position.x, position.y, 2 + this.speed, 2);
     };
 

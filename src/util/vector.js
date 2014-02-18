@@ -64,11 +64,15 @@ define(['./mathUtil'], function (mathUtil) {
     };
 
     /** @returns {Vector} */
-    Vector.prototype.toUnit = function () {
+    Vector.prototype.unit = function () {
         var size = this.getSize();
         return new Vector(this.x / size, this.y / size);
     };
 
+    /** @returns {Vector} */
+    Vector.prototype.normal = function () {
+        return new Vector(this.y, - this.x).unit();
+    };
 
     /**
      * @param {Array.<Vector>} points

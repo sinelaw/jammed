@@ -82,23 +82,29 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         var point;
         /** @type {Vector} */
         var prevPoint;
+        /** @type {Vector} */
         var segment;
         if (!this.points.length) {
             return;
         }
         context.fillStyle = this.color;
+        context.strokeStyle = this.color;
 //        context.shadowColor = "#ffffff";
 //        context.shadowBlur = -width / 2;
         for (i = 1; i < this.points.length; i += 1) {
-            prevPoint = this.points[i - 1].min(this.points[i]);
-            point = this.points[i].max(this.points[i - 1]);
+            prevPoint = this.points[i - 1];
+            point = this.points[i];
             segment = point.minus(prevPoint);
             for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
-                laneOffset = calcLaneOffset(segment, laneNum * laneWidth);
-                context.fillRect(prevPoint.x + laneOffset.x,
-                    prevPoint.y + laneOffset.y,
-                    segment.x + laneWidth,
-                    segment.y + laneWidth);
+                laneOffset = calcLaneOffset(segment, 1 + laneNum * laneWidth);
+//                context.fillRect(prevPoint.x + laneOffset.x,
+//                    prevPoint.y + laneOffset.y,
+//                    segment.x + laneWidth,
+//                    segment.y + laneWidth);
+                context.beginPath();
+                context.moveTo(prevPoint.x + laneOffset.x, prevPoint.y + laneOffset.y);
+                context.lineTo(point.x + laneOffset.x, point.y + laneOffset.y);
+                context.stroke();
             }
         }
     };
@@ -109,14 +115,18 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         });
     };
 
-    function calcLaneOffset(unitSegment, laneStart) {
-        return new Vector(Math.abs(unitSegment.x) < consts.DELTA ? laneStart : 0,
-            Math.abs(unitSegment.y) < consts.DELTA ? laneStart : 0);
+    /**
+     * @param {Vector} segment
+     * @param {number} laneStart
+     * @returns {Vector}
+     */
+    function calcLaneOffset(segment, laneStart) {
+        return segment.normal().mul(laneStart);
     }
 
     /** @param {number} roadPosition
      *  @param {number} laneNum
-     *  @returns {Vector}
+     *  @returns {translate: Vector, tangent: Vector}
      */
     Road.prototype.roadToWorldPosition = function (roadPosition, laneNum) {
         /** @type {Vector} */
@@ -125,7 +135,6 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         var segment;
         var unitSegment;
         var pos = roadPosition;
-        var laneStart;
         Vector.forEachSegment(this.points, function (prevPoint, point) {
             var segmentSize;
             segment = point.minus(prevPoint);
@@ -137,10 +146,12 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
             pos -= segmentSize;
         });
         if (targetSegmentStart && segment) {
-            laneStart = laneNum * laneWidth;
-            unitSegment = segment.toUnit();
-            return targetSegmentStart.plus(unitSegment.mul(pos)).plus(
-                calcLaneOffset(unitSegment, laneStart));
+            unitSegment = segment.unit();
+            return {
+                translate: targetSegmentStart.plus(unitSegment.mul(pos)).plus(
+                    calcLaneOffset(unitSegment, 1 + (laneNum * laneWidth))),
+                tangent: unitSegment
+            };
         }
         return null;
     };

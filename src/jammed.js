@@ -58,8 +58,12 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
              * @param {number} carIndex
              */
             function drawCar(road, car, carIndex) {
-                var drawPosition = road.roadToWorldPosition(car.position, car.lane);
-                car.draw(context, drawPosition);
+                var transform = road.roadToWorldPosition(car.position, car.lane);
+                context.save();
+                context.translate(transform.translate.x, transform.translate.y);
+                context.rotate(Math.PI/2 - Math.atan2(transform.tangent.x, transform.tangent.y));
+                car.draw(context);
+                context.restore();
                 //context.fillText(carIndex, drawPosition.x + 10, drawPosition.y + 10);
             }
 
@@ -348,7 +352,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
         function init() {
             var i;
-            var margin = 10 * consts.LANES_PER_ROAD;
+            var margin = 20 * consts.LANES_PER_ROAD;
             _canvas = /** @type {HTMLCanvasElement} */ document.getElementById('canvas');
             _context = _canvas.getContext('2d');
             _fpsElem = document.getElementById('fps');
@@ -358,11 +362,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             world = new World(_canvas.width, _canvas.height);
             //for (i = 0; i < consts.NUM_RANDOM_ROADS; i += 1) {
             world.roads.push(Road.random([
-                new Vector(margin * 1.5, margin),
+                new Vector(margin, margin),
                 new Vector(width - margin, margin),
                 new Vector(width - margin, height - margin),
                 new Vector(margin, height - margin),
-                new Vector(margin, margin * 1.5)
+                new Vector(margin, margin)
             ]));
             //}
             _context.setTransform(1, 0, 0, 1, 0, 0);
