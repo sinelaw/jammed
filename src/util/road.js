@@ -5,7 +5,6 @@
 define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vector, Car, consts) {
     "use strict";
 
-    var laneWidth = 6;
 
     /**
      * @param {Road} road
@@ -96,7 +95,7 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
             point = this.points[i];
             segment = point.minus(prevPoint);
             for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
-                laneOffset = calcLaneOffset(segment, 1 + laneNum * laneWidth);
+                laneOffset = calcLaneOffset(segment, 1 + laneNum * consts.LANE_WIDTH);
 //                context.fillRect(prevPoint.x + laneOffset.x,
 //                    prevPoint.y + laneOffset.y,
 //                    segment.x + laneWidth,
@@ -129,11 +128,11 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
      *  @returns {translate: Vector, tangent: Vector}
      */
     Road.prototype.roadToWorldPosition = function (roadPosition, laneNum) {
+        var unitSegment;
         /** @type {Vector} */
         var targetSegmentStart;
         /** @type {Vector} */
         var segment;
-        var unitSegment;
         var pos = roadPosition;
         Vector.forEachSegment(this.points, function (prevPoint, point) {
             var segmentSize;
@@ -145,11 +144,11 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
             }
             pos -= segmentSize;
         });
-        if (targetSegmentStart && segment) {
+        if (segment) {
             unitSegment = segment.unit();
             return {
                 translate: targetSegmentStart.plus(unitSegment.mul(pos)).plus(
-                    calcLaneOffset(unitSegment, 1 + (laneNum * laneWidth))),
+                    calcLaneOffset(unitSegment, 1 + (laneNum * consts.LANE_WIDTH))),
                 tangent: unitSegment
             };
         }
