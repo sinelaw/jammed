@@ -205,7 +205,9 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 // Wreck!
                 console.log('Collision!', car.color, nextCar.color);
                 car.wreck();
+                car.wreckTTL = 10;
                 nextCar.wreck();
+                nextCar.wreckTTL = 10;
                 //debugger;
                 return 0;
             }
@@ -300,6 +302,10 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var nextLane = decideNextLane(road, car, carIndex);
             var nextAccel = decideAcceleration(road, car, carIndex);
             if (car.wrecked) {
+                car.wreckTTL -= deltaT;
+                if (0 >= car.wreckTTL) {
+                    road.cars.splice(carIndex, 1);
+                }
                 return null;
             }
 
