@@ -5,6 +5,8 @@
 define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vector, Car, consts) {
     "use strict";
 
+    var CENTER = new Vector(consts.WIDTH, consts.HEIGHT).mul(0.5);
+    var MIN_LANE_RADIUS = + 3 * CENTER.getSize() / 5;
 
     /**
      * @param {Road} road
@@ -49,7 +51,7 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         this.points = points;
         this.cars = cars;
         this.numLanes = numLanes;
-        this.length = Vector.getLength(points);
+        this.length = getLaneRadius(0) * 2 * consts.PI;// //Vector.getLength(points);
         this.color = 'rgba(' + [mathUtil.randomInt(255, 200), mathUtil.randomInt(255, 200), mathUtil.randomInt(255, 200), 1].join(',') + ')';
     }
 
@@ -71,41 +73,51 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         return result;
     };
 
+    function getLaneRadius(laneNum) {
+        return laneNum * consts.LANE_WIDTH + MIN_LANE_RADIUS;
+    }
+
     /**
      * @param {CanvasRenderingContext2D} context
      */
     Road.prototype.draw = function (context) {
         var laneNum, laneOffset;
-        var i;
-        /** @type {Vector} */
-        var point;
-        /** @type {Vector} */
-        var prevPoint;
-        /** @type {Vector} */
-        var segment;
-        if (!this.points.length) {
-            return;
-        }
-        context.fillStyle = this.color;
         context.strokeStyle = this.color;
-//        context.shadowColor = "#ffffff";
-//        context.shadowBlur = -width / 2;
-        for (i = 1; i < this.points.length; i += 1) {
-            prevPoint = this.points[i - 1];
-            point = this.points[i];
-            segment = point.minus(prevPoint);
-            for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
-                laneOffset = calcLaneOffset(segment, 1 + laneNum * consts.LANE_WIDTH);
-//                context.fillRect(prevPoint.x + laneOffset.x,
-//                    prevPoint.y + laneOffset.y,
-//                    segment.x + laneWidth,
-//                    segment.y + laneWidth);
-                context.beginPath();
-                context.moveTo(prevPoint.x + laneOffset.x, prevPoint.y + laneOffset.y);
-                context.lineTo(point.x + laneOffset.x, point.y + laneOffset.y);
-                context.stroke();
-            }
+        for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
+            context.arc(CENTER.x, CENTER.y, getLaneRadius(laneNum), 0, consts.PI * 2);
+            context.stroke();
         }
+//        var laneNum, laneOffset;
+//        var i;
+//        /** @type {Vector} */
+//        var point;
+//        /** @type {Vector} */
+//        var prevPoint;
+//        /** @type {Vector} */
+//        var segment;
+//        if (!this.points.length) {
+//            return;
+//        }
+//        context.fillStyle = this.color;
+//        context.strokeStyle = this.color;
+////        context.shadowColor = "#ffffff";
+////        context.shadowBlur = -width / 2;
+//        for (i = 1; i < this.points.length; i += 1) {
+//            prevPoint = this.points[i - 1];
+//            point = this.points[i];
+//            segment = point.minus(prevPoint);
+//            for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
+//                laneOffset = calcLaneOffset(segment, 1 + laneNum * consts.LANE_WIDTH);
+////                context.fillRect(prevPoint.x + laneOffset.x,
+////                    prevPoint.y + laneOffset.y,
+////                    segment.x + laneWidth,
+////                    segment.y + laneWidth);
+//                context.beginPath();
+//                context.moveTo(prevPoint.x + laneOffset.x, prevPoint.y + laneOffset.y);
+//                context.lineTo(point.x + laneOffset.x, point.y + laneOffset.y);
+//                context.stroke();
+//            }
+//        }
     };
 
     Road.prototype.sortCars = function () {
@@ -128,31 +140,37 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
      *  @returns {translate: Vector, tangent: Vector}
      */
     Road.prototype.roadToWorldPosition = function (roadPosition, laneNum) {
-        var unitSegment;
-        /** @type {Vector} */
-        var targetSegmentStart;
-        /** @type {Vector} */
-        var segment;
-        var pos = roadPosition;
-        Vector.forEachSegment(this.points, function (prevPoint, point) {
-            var segmentSize;
-            segment = point.minus(prevPoint);
-            segmentSize = segment.getSize();
-            targetSegmentStart = prevPoint;
-            if (segmentSize > pos) {
-                return true;
-            }
-            pos -= segmentSize;
-        });
-        if (segment) {
-            unitSegment = segment.unit();
-            return {
-                translate: targetSegmentStart.plus(unitSegment.mul(pos)).plus(
-                    calcLaneOffset(unitSegment, 1 + (laneNum * consts.LANE_WIDTH))),
-                tangent: unitSegment
-            };
-        }
-        return null;
+        var angle = ((roadPosition / this.length) * 2 * consts.PI);
+        var pos = (new Vector(Math.cos(angle), Math.sin(angle))).mul(getLaneRadius(laneNum + 1)).plus(CENTER);
+        return {
+            translate: pos,
+            tangent: pos.minus(CENTER).normal().mul(-1)
+        };
+//        var unitSegment;
+//        /** @type {Vector} */
+//        var targetSegmentStart;
+//        /** @type {Vector} */
+//        var segment;
+//        var pos = roadPosition;
+//        Vector.forEachSegment(this.points, function (prevPoint, point) {
+//            var segmentSize;
+//            segment = point.minus(prevPoint);
+//            segmentSize = segment.getSize();
+//            targetSegmentStart = prevPoint;
+//            if (segmentSize > pos) {
+//                return true;
+//            }
+//            pos -= segmentSize;
+//        });
+//        if (segment) {
+//            unitSegment = segment.unit();
+//            return {
+//                translate: targetSegmentStart.plus(unitSegment.mul(pos)).plus(
+//                    calcLaneOffset(unitSegment, 1 + (laneNum * consts.LANE_WIDTH))),
+//                tangent: unitSegment
+//            };
+//        }
+//        return null;
     };
 
     /**

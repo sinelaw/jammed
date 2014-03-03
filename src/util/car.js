@@ -16,11 +16,11 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
     }
 
     var carImages = [
-        loadCar('img/car.png'),
         loadCar('img/car_yellow.png'),
         loadCar('img/car_green.png'),
+        loadCar('img/car_red.png'),
         loadCar('img/car_purple.png'),
-        loadCar('img/car_red.png')
+        loadCar('img/car.png')
     ];
 
                     /**
@@ -42,7 +42,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
         this.color = mathUtil.randomColor();
         this.wrecked = false;
         this.minKeepingTime = mathUtil.randomInt(consts.MAX_KEEPING_TIME, consts.MIN_KEEPING_TIME);
-        this.image = carImages[mathUtil.randomInt(carImages.length)];
+        this.image = carImages[~~(this.maxSpeed / consts.MAX_SPEED * carImages.length)];
     }
 
     Car.prototype.wreck = function () {
@@ -70,11 +70,11 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
 //                context.shadowColor = 'green';
 //            }
 //            context.shadowBlur = 4;
-
-//        context.fillRect(0, 0, this.length*3/4, this.length);
 //        context.fillRect(this.length*3/4, 0, this.length/4, this.length / 2);
 
-        context.drawImage(this.image, 0, 0);
+//        context.strokeStyle= '#eeeeee';
+//        context.strokeRect(-this.length/2, 0, this.length, this.length/2);
+        context.drawImage(this.image, -this.length/2, 0);
 
         //context.fillRect(position.x, position.y, 2 + this.speed, 2);
     };

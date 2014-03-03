@@ -1,13 +1,23 @@
 /*global define*/
 define({
+    /** @type {number}
+     * @const */
+    PI: 3.1415926,
 
     /** @type {number}
      * @const */
-    TARGET_FPS: 30,
+    WIDTH: 600,
+    /** @type {number}
+     * @const */
+    HEIGHT: 600,
 
     /** @type {number}
      * @const */
-    MAX_ACCELERATION: 8,
+    TARGET_FPS: 35,
+
+    /** @type {number}
+     * @const */
+    MAX_ACCELERATION: 30,
 
     /** @type {number}
      * @const */
@@ -20,11 +30,11 @@ define({
 
     /** @type {number}
      * @const */
-    MAX_SPEED: 100,
+    MAX_SPEED: 300,
 
     /** @type {number}
      * @const */
-    MIN_MAX_SPEED: 70,
+    MIN_MAX_SPEED: 50,
 
     /**
      * Minimum travel time to next car's rear, that cars keep while in motion.
@@ -76,10 +86,9 @@ define({
 
     /** @type {number}
      * @const */
-    LANES_PER_ROAD: 3,
+    LANES_PER_ROAD: 2,
 
     /** @type {number}
      * @const */
-    LANE_WIDTH: 16
-
+    LANE_WIDTH: 18
 });
