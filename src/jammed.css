@@ -1,3 +1,18 @@
+html, body {
+    background-color: black;
+    color: white;
+}
+*, h1, h2, h3, h4, h5 {
+
+    font-family: 'Freckle Face', cursive;
+}
+.canvas-row {
+    width: 100%;
+}
 #canvas {
-    background-color: transparent;
+    background: url('img/world-really-dark.png') no-repeat 0 0;
+}
+#fps {
+    margin-top: 10px;
+    color: #888;
 }

@@ -5,6 +5,7 @@
     <title>Jammed!</title>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+    <link href='http://fonts.googleapis.com/css?family=Freckle+Face' rel='stylesheet' type='text/css'>
     <link href="jammed.css" rel="stylesheet"/>
     <script data-main="main" src="//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
     <script src="main.js"></script>
@@ -14,20 +15,25 @@
 
 <div class="container">
     <div class="row">
+        <div class="col-md-8">
+        <canvas id="canvas" width="600" height="600" style='width:600px;height:600px'></canvas>
+        </div>
         <div class="col-md-4">
             <h1>Jammed!
                 <!--                <small>Traffic jams in javascript</small>-->
-                <div class="btn-group">
-                    <button class="btn btn-primary" type="button" onclick="jammed.start()">Start</button>
-                    <button class="btn btn-primary" type="button" onclick="jammed.stop()">Stop</button>
-                    <button class="btn btn-primary" type="button" onclick="jammed.clear()">Reset</button>
-                </div>
             </h1>
+            <div class="btn-group">
+                <button class="btn btn-primary" type="button" onclick="jammed.start()">Start</button>
+                <button class="btn btn-primary" type="button" onclick="jammed.stop()">Stop</button>
+                <button class="btn btn-primary" type="button" onclick="jammed.clear()">Reset</button>
+            </div>
             <div id="fps">fps</div>
+            <p>
+                <a href="https://github.com/sinelaw/jammed">source</a>
+            </p>
         </div>
-        <div class="col-md-8">
-            <canvas id="canvas" width="600" height="600" style='width:600px;height:600px'></canvas>
-        </div>
+    </div>
+    <div class="row">
 
     </div>
 

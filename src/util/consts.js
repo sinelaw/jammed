@@ -47,11 +47,11 @@ define({
 
     /** @type {number}
      * @const */
-    MIN_CAR_LENGTH: 38,
+    MIN_CAR_LENGTH: 40,
 
     /** @type {number}
      * @const */
-    MAX_CAR_LENGTH: 39,
+    MAX_CAR_LENGTH: 40,
 
 
     /**
@@ -86,7 +86,7 @@ define({
 
     /** @type {number}
      * @const */
-    LANES_PER_ROAD: 2,
+    LANES_PER_ROAD: 3,
 
     /** @type {number}
      * @const */

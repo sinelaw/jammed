@@ -16,14 +16,15 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
     }
 
     var carImages = [
-        loadCar('img/car_yellow.png'),
-        loadCar('img/car_green.png'),
-        loadCar('img/car_red.png'),
-        loadCar('img/car_purple.png'),
-        loadCar('img/car.png')
+        loadCar('img/van.png'),
+        loadCar('img/jeep.png'),
+        loadCar('img/car1.png'),
+        loadCar('img/car2.png'),
+        loadCar('img/lorry.png'),
+        loadCar('img/car3.png')
     ];
 
-                    /**
+    /**
      * @param {number} length
      * @param {number} position
      * @param {number} lane
@@ -56,6 +57,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
      * @param {Vector} position
      */
     Car.prototype.draw = function (context) {
+        var widthHeightRatio = 58.0 / 128.0;
         var style = this.color; //this.accel > 0 ? 'green' : 'red'; //this.color;
         if (this.wrecked) {
             style = consts.WRECKED_CAR_STYLE;
@@ -74,7 +76,10 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
 
 //        context.strokeStyle= '#eeeeee';
 //        context.strokeRect(-this.length/2, 0, this.length, this.length/2);
-        context.drawImage(this.image, -this.length/2, 0);
+
+        context.translate(this.length, 0);
+        context.scale(-1, 1);
+        context.drawImage(this.image, this.length/2.0, 0, this.length, this.length * widthHeightRatio);
 
         //context.fillRect(position.x, position.y, 2 + this.speed, 2);
     };

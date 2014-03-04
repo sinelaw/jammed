@@ -6,7 +6,7 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
     "use strict";
 
     var CENTER = new Vector(consts.WIDTH, consts.HEIGHT).mul(0.5);
-    var MIN_LANE_RADIUS = + 3 * CENTER.getSize() / 5;
+    var MIN_LANE_RADIUS = 150;//+ CENTER.x - (consts.LANES_PER_ROAD * consts.LANE_WIDTH);
 
     /**
      * @param {Road} road
@@ -84,8 +84,8 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
         var laneNum, laneOffset;
         context.strokeStyle = this.color;
         for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
-            context.arc(CENTER.x, CENTER.y, getLaneRadius(laneNum), 0, consts.PI * 2);
-            context.stroke();
+            //context.arc(CENTER.x, CENTER.y, getLaneRadius(laneNum), 0, consts.PI * 2);
+            //scontext.stroke();
         }
 //        var laneNum, laneOffset;
 //        var i;

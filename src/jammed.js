@@ -309,7 +309,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
          * @returns {Function|null}
          */
         function simulateCar(road, car, carIndex) {
-            var nextLane = decideNextLane(road, car, carIndex);
+            car.lane = decideNextLane(road, car, carIndex);
             var nextAccel = decideAcceleration(road, car, carIndex);
             if (car.wrecked) {
                 car.wreckTTL -= deltaT;
@@ -318,13 +318,10 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 }
                 return null;
             }
-
+            //= nextLane;
             car.accel = nextAccel;
             simulateNewtonMechanics(road, car);
 
-            return function () {
-                car.lane = nextLane;
-            };
         }
 
         function simulateStep(world) {
@@ -335,13 +332,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             var road;
             for (i = 0; i < world.roads.length; i += 1) {
                 road = world.roads[i];
-                carUpdaters = road.forEachCar(simulateCar);
-                for (j = 0; j < carUpdaters.length; j += 1) {
-                    carUpdater = carUpdaters[j];
-                    if (carUpdater) {
-                        carUpdater();
-                    }
-                }
+                road.forEachCar(simulateCar);
                 road.sortCars();
             }
         }
@@ -353,6 +344,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         function resetCanvas() {
+            initElems();
             // Store the current transformation matrix
             _context.save();
 
@@ -366,17 +358,21 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
 
-        function init() {
-            var i;
-            var margin = 20 * consts.LANES_PER_ROAD;
+        function initElems() {
+            if (_canvas) {
+                return;
+            }
             _canvas = /** @type {HTMLCanvasElement} */ document.getElementById('canvas');
             _context = _canvas.getContext('2d');
             _fpsElem = document.getElementById('fps');
+        }
 
+        function init() {
+            var margin = 20 * consts.LANES_PER_ROAD;
+            initElems();
             width = _canvas.width;
             height = _canvas.height;
             world = new World(_canvas.width, _canvas.height);
-            //for (i = 0; i < consts.NUM_RANDOM_ROADS; i += 1) {
             world.roads.push(Road.random([
                 new Vector(margin, margin),
                 new Vector(width - margin, margin),
@@ -384,11 +380,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 new Vector(margin, height - margin),
                 new Vector(margin, margin)
             ]));
-            //}
             _context.setTransform(1, 0, 0, 1, 0, 0);
             _context.clearRect(0, 0, width, height);
             _backgroundImage = drawBackground(_canvas, _context, world);
-            resetCanvas();
+            //resetCanvas();
+            stop();
         }
 
         return {
@@ -409,7 +405,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
                 function updateDeltaT() {
                     var now = Date.now();
-                    var elapsed = now - lastRedrawTime;
+                    var elapsed = now - (lastRedrawTime ? lastRedrawTime : now);
                     var averageElapsed = elapsedQueue.getResult();
                     var fps = Math.floor(1000.0 / averageElapsed);
                     lastRedrawTime = Date.now();
