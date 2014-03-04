@@ -17,7 +17,7 @@ define({
 
     /** @type {number}
      * @const */
-    MAX_ACCELERATION: 30,
+    MAX_ACCELERATION: 200,
 
     /** @type {number}
      * @const */
@@ -30,11 +30,11 @@ define({
 
     /** @type {number}
      * @const */
-    MAX_SPEED: 300,
+    MAX_SPEED: 500,
 
     /** @type {number}
      * @const */
-    MIN_MAX_SPEED: 50,
+    MIN_MAX_SPEED: 5,
 
     /**
      * Minimum travel time to next car's rear, that cars keep while in motion.
