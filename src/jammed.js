@@ -396,6 +396,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 //                context.fillStyle = 'black';
 //                context.shadowBlur = 0;
 //                context.fillText('' + fps + ' fps', 10, 10);
+                  if (fps > 20) {
+
+                    backgroundPos = (backgroundPos + 1) % 2000;
+                    $('html').css({backgroundPosition: backgroundPos + "px 0px"});
+                  }
                 }
 
                 function updateDeltaT() {
@@ -416,8 +421,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 }
 
                 function loop() {
-                    backgroundPos = (backgroundPos + 1) % 2000;
-                    $('html').css({backgroundPosition: backgroundPos + "px 0px"});
                     updateDeltaT();
                     resetCanvas();
                     drawWorld(context, world);
