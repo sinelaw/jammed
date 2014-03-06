@@ -31,6 +31,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         /** @type {HTMLElement} */
         var _fpsElem;
 
+        var backgroundPos = 0;
 
         /**
          * @param {number} width
@@ -417,11 +418,16 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 }
 
                 function loop() {
+                    backgroundPos = (backgroundPos + 1) % 2000;
+                    $('html').css({backgroundPosition: backgroundPos + "px 0px"});
                     updateDeltaT();
+                    resetCanvas();
+                    drawWorld(context, world);
+                    simulateStep(world);
+
+
+
                     window.setTimeout(function () {
-                        resetCanvas();
-                        drawWorld(context, world);
-                        simulateStep(world);
                         if (shouldStop[currentRunCount]) {
                             return;
                         }

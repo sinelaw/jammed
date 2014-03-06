@@ -13,7 +13,7 @@ define({
 
     /** @type {number}
      * @const */
-    TARGET_FPS: 35,
+    TARGET_FPS: 30,
 
     /** @type {number}
      * @const */

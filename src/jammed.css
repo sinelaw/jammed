@@ -1,6 +1,11 @@
-html, body {
+html {
     background-color: black;
+    background-image: url('img/background.png');
     color: white;
+}
+body {
+    color: white;
+    background-color: transparent;
 }
 *, h1, h2, h3, h4, h5 {
 
@@ -10,7 +15,7 @@ html, body {
     width: 100%;
 }
 #canvas {
-    background: url('img/world-really-dark.png') no-repeat 0 0;
+    background: url('img/world3.png') no-repeat 0 0;
 }
 #fps {
     margin-top: 10px;

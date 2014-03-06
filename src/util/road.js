@@ -81,12 +81,27 @@ define(['./mathUtil', './vector', './car', './consts'], function (mathUtil, Vect
      * @param {CanvasRenderingContext2D} context
      */
     Road.prototype.draw = function (context) {
-        var laneNum, laneOffset;
-        context.strokeStyle = this.color;
-        for (laneNum = 0; laneNum < this.numLanes; laneNum += 1) {
-            //context.arc(CENTER.x, CENTER.y, getLaneRadius(laneNum), 0, consts.PI * 2);
-            //scontext.stroke();
+        var i, colors = ['rgba(150,100,250,0.2)',
+                         'rgba(100,150,250,0.2)',
+                         'rgba(100,100,250,0.2)'
+                        ];
+        context.save();
+        for (i = 0; i < this.numLanes; i += 1) {
+            context.beginPath();
+            context.fillStyle = colors[i % colors.length];
+            //context.
+            context.arc(CENTER.x, CENTER.y, getLaneRadius(this.numLanes - i), 0, consts.PI * 2);
+            context.fill();
+            context.closePath();
+
+            context.beginPath();
+            context.fillStyle = 'transparent';
+            //context.
+            context.arc(CENTER.x, CENTER.y, getLaneRadius(this.numLanes - i - 1), 0, consts.PI * 2);
+            context.fill();
+            context.closePath();
         }
+        context.restore();
 //        var laneNum, laneOffset;
 //        var i;
 //        /** @type {Vector} */
