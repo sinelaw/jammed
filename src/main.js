@@ -2,6 +2,8 @@
 require(['./jammed'], function (jammed) {
     'use strict';
     window.jammed = jammed;
-    jammed.init();
-    jammed.start();
+    window.setTimeout(function () {
+        jammed.init();
+        jammed.start();
+    }, 100);
 });

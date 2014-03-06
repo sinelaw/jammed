@@ -1,4 +1,4 @@
-/*global define, console */
+/*global $, define, console */
 define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
     function (mathUtil, Vector, Car, Road, consts) {
         'use strict';
@@ -165,7 +165,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         function spaceAvailableInLane(road, laneNum, carIndex) {
             /** @type {Car} */
             var car = road.cars[carIndex];
-            var minSwitchSpace = car.length * 2.0 ;//(2 + 1.0 * (Math.min(1, car.speed)));
+            var minSwitchSpace = car.length * 2;//(2 + 1.0 * (Math.min(1, car.speed)));
             var nextCarInfo = getNextCarInLane(road, laneNum, carIndex);
             var prevCarInfo = getPrevCarInLane(road, laneNum, carIndex);
             /** @type {number} */
@@ -269,18 +269,12 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             if (car.lane < road.numLanes - 1) {
                 spaceInOtherLane = spaceAvailableInLane(road, car.lane + 1, carIndex);
                 if (spaceInOtherLane > spaceInCurrentLane) {
-                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
-                        'Position: ', car.position,
-                        'Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
                     return car.lane + 1;
                 }
             }
             if (car.lane > 0) {
                 spaceInOtherLane = spaceAvailableInLane(road, car.lane - 1, carIndex);
                 if (spaceInOtherLane > spaceInCurrentLane) {
-                    console.log(car.color, 'Switching lanes. Current lane: ', car.lane,
-                        'Position: ', car.position,
-                        ' Space in this lane:', spaceInCurrentLane, 'in other lane:', spaceInOtherLane);
                     return car.lane - 1;
                 }
             }
@@ -405,15 +399,19 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 }
 
                 function updateDeltaT() {
+                    /** @type {number} */
                     var now = Date.now();
+                    /** @type {number} */
                     var elapsed = now - (lastRedrawTime ? lastRedrawTime : now);
-                    var averageElapsed = elapsedQueue.getResult();
+                    /** @type {number} */
+                    var averageElapsed = Math.max(elapsedQueue.getResult(), 1000.0 / consts.TARGET_FPS);
+                    /** @type {number} */
                     var fps = Math.floor(1000.0 / averageElapsed);
                     lastRedrawTime = Date.now();
                     elapsedQueue.add(elapsed);
                     deltaT = elapsed / 1000.0;
-                    /** @type {number} */
                     deltaTSquared = deltaT * deltaT;
+                    //console.log(now, elapsed, averageElapsed, fps)
                     drawFPS(fps);
                 }
 
