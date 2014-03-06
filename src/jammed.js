@@ -396,7 +396,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 //                context.fillStyle = 'black';
 //                context.shadowBlur = 0;
 //                context.fillText('' + fps + ' fps', 10, 10);
-                  if (fps > 20) {
+                  if (fps > 25) {
 
                     backgroundPos = (backgroundPos + 1) % 2000;
                     $('html').css({backgroundPosition: backgroundPos + "px 0px"});
