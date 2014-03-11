@@ -393,14 +393,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
                 function drawFPS(fps) {
                     _fpsElem.innerHTML = '' + fps + ' fps';
-//                context.fillStyle = 'black';
-//                context.shadowBlur = 0;
-//                context.fillText('' + fps + ' fps', 10, 10);
-                  if (fps > 25) {
-
-                    backgroundPos = (backgroundPos + 1) % 2000;
-                    $('html').css({backgroundPosition: backgroundPos + "px 0px"});
-                  }
                 }
 
                 function updateDeltaT() {
@@ -416,7 +408,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                     elapsedQueue.add(elapsed);
                     deltaT = elapsed / 1000.0;
                     deltaTSquared = deltaT * deltaT;
-                    //console.log(now, elapsed, averageElapsed, fps)
                     drawFPS(fps);
                 }
 
@@ -425,8 +416,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                     resetCanvas();
                     drawWorld(context, world);
                     simulateStep(world);
-
-
 
                     window.setTimeout(function () {
                         if (shouldStop[currentRunCount]) {
