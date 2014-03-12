@@ -62,10 +62,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 var transform = road.roadToWorldPosition(car.position, car.lane);
                 context.save();
                 context.translate(transform.translate.x, transform.translate.y);
+                //context.fillStyle = 'red';
+                //context.fillText(car.color, 10, 10);
                 context.rotate(Math.PI/2 - Math.atan2(transform.tangent.x, transform.tangent.y));
                 car.draw(context);
                 context.restore();
-                //context.fillText(carIndex, drawPosition.x + 10, drawPosition.y + 10);
             }
 
             for (i = 0; i < world.roads.length; i += 1) {
@@ -97,7 +98,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
          * @param {number} carIndex
          * @returns {{car:Car,index:number}}
          */
-        function getNextCarInLane(road, lane, carIndex) {
+        function carInfoForNextCarInLane(road, lane, carIndex) {
             /** @type {number} */
             var i;
             /** @type {number} */
@@ -146,6 +147,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
+         * Returns the distance between two cars on a road of a given length, regardless of their orientation.
          * @param {number} roadLength
          * @param {number} carPos1
          * @param {number} carPos2
@@ -160,32 +162,34 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
          * @param {Road} road
          * @param {number} laneNum
          * @param {number} carIndex
-         * @returns {number}
+         * @returns {{distanceToNextCar: number, closingSpeed:number}}
          */
-        function spaceAvailableInLane(road, laneNum, carIndex) {
+        function conditionsForMerging(road, laneNum, carIndex) {
             /** @type {Car} */
             var car = road.cars[carIndex];
-            var minSwitchSpace = car.length * 2;//(2 + 1.0 * (Math.min(1, car.speed)));
-            var nextCarInfo = getNextCarInLane(road, laneNum, carIndex);
+            var minSwitchSpace = car.length * 1.5;//(2 + 1.0 * (Math.min(1, car.speed)));
+            var nextCarInfo = carInfoForNextCarInLane(road, laneNum, carIndex);
             var prevCarInfo = getPrevCarInLane(road, laneNum, carIndex);
             /** @type {number} */
             var forwardSpace;
             /** @type {number} */
             var backwardSpace;
 
-            if (!nextCarInfo || !prevCarInfo) {
-                if (!nextCarInfo && !prevCarInfo) {
-                    return road.length - car.length;
-                }
-                return 0;
+            if (!nextCarInfo && !prevCarInfo) {
+                return { distanceToNextCar: road.length - car.length,
+                         closingSpeed: 0 };
             }
+            if (!nextCarInfo || !prevCarInfo) {
+                throw new Error('If at least one other car is in the lane, both next and previous cars should not be empty');
+            }
+
             forwardSpace = carsDistance(road.length, nextCarInfo.car.position, car.position + car.length);
             backwardSpace = carsDistance(road.length, car.position, prevCarInfo.car.position + prevCarInfo.car.length);
 
             if ((forwardSpace < minSwitchSpace) || (backwardSpace < minSwitchSpace)) {
-                return 0;
+                return null;
             }
-            return forwardSpace;
+            return { distanceToNextCar: forwardSpace, closingSpeed: car.speed - nextCarInfo.car.speed };
         }
 
         /**
@@ -195,20 +199,32 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
          * @returns {number}
          */
         function decideAcceleration(road, car, carIndex) {
+            /** @type {number} */
             var distanceToNextCarBackside;
+            /** @type {number} */
             var closingSpeed;
+            /** @type {number} */
             var nextCarRelativePosition;
+            /** @type {number} */
             var impactTime;
+            /** @type {number} */
             var keepingTime;
+            /** @type {number} */
             var nextAccel;
+            /** @type {Car} */
             var nextCar;
+            var nextCarInfo;
+
             if (car.wrecked) {
                 return 0;
             }
-            nextCar = getNextCarInLane(road, car.lane, carIndex).car;
-            if (!nextCar) {
+
+            nextCarInfo = carInfoForNextCarInLane(road, car.lane, carIndex);
+            if (!nextCarInfo) {
                 return car.maxAcceleration;
             }
+            nextCar = nextCarInfo.car;
+
             nextAccel = car.maxAcceleration;
             nextCarRelativePosition = nextCar.position + (nextCar.position < car.position ? road.length : 0);
             closingSpeed = car.speed - nextCar.speed;
@@ -262,19 +278,19 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             if (car.wrecked) {
                 return car.lane;
             }
-            spaceInCurrentLane = spaceAvailableInLane(road, car.lane, carIndex);
-            if (spaceInCurrentLane > car.length * 10) {
+            spaceInCurrentLane = conditionsForMerging(road, car.lane, carIndex);
+            if (spaceInCurrentLane && (spaceInCurrentLane.distanceToNextCar > car.length * 10)) {
                 return car.lane; // plenty of space in current lane.
             }
             if (car.lane < road.numLanes - 1) {
-                spaceInOtherLane = spaceAvailableInLane(road, car.lane + 1, carIndex);
-                if (spaceInOtherLane > spaceInCurrentLane) {
+                spaceInOtherLane = conditionsForMerging(road, car.lane + 1, carIndex);
+                if (spaceInOtherLane && (!spaceInCurrentLane || (spaceInOtherLane.closingSpeed < spaceInCurrentLane.closingSpeed))) {
                     return car.lane + 1;
                 }
             }
             if (car.lane > 0) {
-                spaceInOtherLane = spaceAvailableInLane(road, car.lane - 1, carIndex);
-                if (spaceInOtherLane > spaceInCurrentLane) {
+                spaceInOtherLane = conditionsForMerging(road, car.lane - 1, carIndex);
+                if (spaceInOtherLane && (!spaceInCurrentLane || (spaceInOtherLane.closingSpeed < spaceInCurrentLane.closingSpeed))) {
                     return car.lane - 1;
                 }
             }

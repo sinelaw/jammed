@@ -25,15 +25,13 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
     ];
 
     /**
-     * @param {number} length
      * @param {number} position
      * @param {number} lane
      * @param {number} speed
      * @constructor
      * @returns {{length:number, position:number, speed:number, lane: number, maxSpeed: number, accel: number, maxAcceleration:number, color:string, minKeepingTime: number, image: Image}}
      */
-    function Car(length, position, lane, speed) {
-        this.length = length;
+    function Car(position, lane, speed) {
         this.position = position;
         this.speed = speed;
         this.lane = lane;
@@ -44,6 +42,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
         this.wrecked = false;
         this.minKeepingTime = mathUtil.randomInt(consts.MAX_KEEPING_TIME, consts.MIN_KEEPING_TIME);
         this.image = carImages[~~(this.maxSpeed / consts.MAX_SPEED * carImages.length)];
+        this.length = this.image.width / 3;//length;
     }
 
     Car.prototype.wreck = function () {
@@ -57,38 +56,21 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
      * @param {Vector} position
      */
     Car.prototype.draw = function (context) {
-        var widthHeightRatio = 58.0 / 128.0;
+        var widthHeightRatio = this.image.height / this.image.width;
         var style = this.color; //this.accel > 0 ? 'green' : 'red'; //this.color;
         if (this.wrecked) {
             style = consts.WRECKED_CAR_STYLE;
         }
-        //context.fillStyle = style;
-        // This really slows things down:
-//            if (Math.abs(car.accel) < DELTA) {
-//                context.shadowColor = 'black';
-//            } else if (car.accel < 0) {
-//                context.shadowColor = 'red';
-//            } else {
-//                context.shadowColor = 'green';
-//            }
-//            context.shadowBlur = 4;
-//        context.fillRect(this.length*3/4, 0, this.length/4, this.length / 2);
-
-//        context.strokeStyle= '#eeeeee';
-//        context.strokeRect(-this.length/2, 0, this.length, this.length/2);
-
         context.translate(this.length, 0);
         context.scale(-1, 1);
         context.drawImage(this.image, this.length/2.0, 0, this.length, this.length * widthHeightRatio);
-
-        //context.fillRect(position.x, position.y, 2 + this.speed, 2);
     };
 
     /**
      * @returns {Car}
      */
     Car.random = function () {
-        return new Car(mathUtil.randomInt(consts.MAX_CAR_LENGTH, consts.MIN_CAR_LENGTH), 0, 0, 0);
+        return new Car(0, 0, 0);
     };
 
     return Car;
