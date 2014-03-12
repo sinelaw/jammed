@@ -401,12 +401,12 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                     /** @type {number} */
                     var elapsed = now - (lastRedrawTime ? lastRedrawTime : now);
                     /** @type {number} */
-                    var averageElapsed = Math.max(elapsedQueue.getResult(), 1000.0 / consts.TARGET_FPS);
+                    var averageElapsed = elapsedQueue.getResult();
                     /** @type {number} */
                     var fps = Math.floor(1000.0 / averageElapsed);
                     lastRedrawTime = Date.now();
                     elapsedQueue.add(elapsed);
-                    deltaT = elapsed / 1000.0;
+                    deltaT = Math.min(elapsed / 1000.0, 1.0 / consts.TARGET_FPS);
                     deltaTSquared = deltaT * deltaT;
                     drawFPS(fps);
                 }
