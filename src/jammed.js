@@ -31,8 +31,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         /** @type {HTMLElement} */
         var _fpsElem;
 
-        var backgroundPos = 0;
-
         /**
          * @param {number} width
          * @param {number} height
@@ -362,8 +360,6 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             // Use the identity matrix while clearing the canvas
             _context.setTransform(1, 0, 0, 1, 0, 0);
             _context.clearRect(0, 0, width, height);
-            _context.putImageData(_backgroundImage, 0, 0);
-
             // Restore the transform
             _context.restore();
         }
@@ -380,6 +376,8 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
         function init() {
             var margin = 20 * consts.LANES_PER_ROAD;
+            var bgCanvasContext = /** @type {HTMLCanvasElement} */ document.getElementById('bgCanvas').getContext('2d');
+
             initElems();
             width = _canvas.width;
             height = _canvas.height;
@@ -394,6 +392,10 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
             _context.setTransform(1, 0, 0, 1, 0, 0);
             _context.clearRect(0, 0, width, height);
             _backgroundImage = drawBackground(_canvas, _context, world);
+
+            bgCanvasContext.putImageData(_backgroundImage, 0, 0);
+
+
             //resetCanvas();
             stop();
         }

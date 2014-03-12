@@ -17,19 +17,21 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8">
-        <canvas id="canvas" width="600" height="600" style='width:600px;height:600px'></canvas>
+            <canvas id="bgCanvas" width="600" height="600" style='width:600px;height:600px'></canvas>
+            <canvas id="canvas" width="600" height="600" style='width:600px;height:600px'></canvas>
         </div>
         <div class="col-md-4">
             <h1>Jammed!
                 <!--                <small>Traffic jams in javascript</small>-->
             </h1>
+
             <div class="btn-group">
                 <button class="btn btn-primary" type="button" onclick="jammed.start()">Start</button>
                 <button class="btn btn-primary" type="button" onclick="jammed.stop()">Stop</button>
                 <button class="btn btn-primary" type="button" onclick="jammed.clear()">Reset</button>
             </div>
             <div id="fps">fps</div>
-            <p>
+            <p class="source-link">
                 <a href="https://github.com/sinelaw/jammed"><strong>source</strong></a>
             </p>
 
@@ -37,8 +39,13 @@
     </div>
 
     <div class="footer">
-        <p>Created by <a href="https://github.com/sinelaw">Noam Lewis</a>.</p>
-        <a target="_blank" href="https://www.iconfinder.com/iconsets/Car_Icon_Set_BevelAndEmboss-Net#readme">Car images</a> by <a target="_blank" href="http://www.bevelandemboss.net/other-resources.php">BevelAndEmboss.net</a> (broken site)
+        <p class="created-by">Created by <a href="https://github.com/sinelaw">Noam Lewis</a>.</p>
+        <a target="_blank" href="https://www.iconfinder.com/iconsets/Car_Icon_Set_BevelAndEmboss-Net#readme">
+            Car images
+        </a>
+        by
+        <a target="_blank" href="http://www.bevelandemboss.net/other-resources.php">BevelAndEmboss.net</a>
+        (broken site :()
     </div>
 </div>
 

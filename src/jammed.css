@@ -14,8 +14,12 @@ body {
 .canvas-row {
     width: 100%;
 }
-#canvas {
+#bgCanvas {
     background: url('img/world3.png') no-repeat 0 0;
+    position: absolute;
+}
+#canvas {
+    position: absolute;
 }
 #fps {
     margin-top: 10px;
@@ -40,4 +44,12 @@ body {
 
 .unicode {
     font: sans-serif;
+}
+
+.source-link {
+    font-size: 16px;
+}
+
+.created-by {
+    font-size: 14px;
 }
