@@ -43,6 +43,7 @@ define(['./mathUtil', './consts'], function (mathUtil, consts) {
         this.minKeepingTime = mathUtil.randomInt(consts.MAX_KEEPING_TIME, consts.MIN_KEEPING_TIME);
         this.image = carImages[~~(this.maxSpeed / consts.MAX_SPEED * carImages.length)];
         this.length = this.image.width / 3;//length;
+        this.lastLaneChange = 0;//length;
     }
 
     Car.prototype.wreck = function () {
