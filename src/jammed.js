@@ -32,11 +32,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         var _fpsElem;
 
         /**
-         * @param {number} width
-         * @param {number} height
-         * @constructor
-         * @returns {{width:number, height:number, roads:Array.<Road>}}
-         */
+        * @param {number} width
+        * @param {number} height
+        * @constructor
+        * @returns {{width:number, height:number, roads:Array.<Road>}}
+        */
         function World(width, height) {
             this.width = width;
             this.height = height;
@@ -45,17 +45,17 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {CanvasRenderingContext2D} context
-         * @param {World} world
-         */
+        * @param {CanvasRenderingContext2D} context
+        * @param {World} world
+        */
         function drawWorld(context, world) {
             var i;
 
             /**
-             * @param {Road} road
-             * @param {Car} car
-             * @param {number} carIndex
-             */
+            * @param {Road} road
+            * @param {Car} car
+            * @param {number} carIndex
+            */
             function drawCar(road, car, carIndex) {
                 var transform = road.roadToWorldPosition(car.position, car.lane);
                 context.save();
@@ -73,11 +73,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {HTMLCanvasElement} canvas
-         * @param {CanvasRenderingContext2D} context
-         * @param {World} world
-         * @returns {ImageData}
-         */
+        * @param {HTMLCanvasElement} canvas
+        * @param {CanvasRenderingContext2D} context
+        * @param {World} world
+        * @returns {ImageData}
+        */
         function drawBackground(canvas, context, world) {
             /** @type {Road} */
             var road;
@@ -91,11 +91,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {Road} road
-         * @param {number} lane
-         * @param {number} carIndex
-         * @returns {{car:Car,index:number}}
-         */
+        * @param {Road} road
+        * @param {number} lane
+        * @param {number} carIndex
+        * @returns {{car:Car,index:number}}
+        */
         function carInfoForNextCarInLane(road, lane, carIndex) {
             /** @type {number} */
             var i;
@@ -118,11 +118,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {Road} road
-         * @param {number} lane
-         * @param {number} carIndex
-         * @returns {{car:Car,index:number}}
-         */
+        * @param {Road} road
+        * @param {number} lane
+        * @param {number} carIndex
+        * @returns {{car:Car,index:number}}
+        */
         function getPrevCarInLane(road, lane, carIndex) {
             /** @type {number} */
             var i;
@@ -145,23 +145,23 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * Returns the distance between two cars on a road of a given length, regardless of their orientation.
-         * @param {number} roadLength
-         * @param {number} carPos1
-         * @param {number} carPos2
-         * @returns {number}
-         */
+        * Returns the distance between two cars on a road of a given length, regardless of their orientation.
+        * @param {number} roadLength
+        * @param {number} carPos1
+        * @param {number} carPos2
+        * @returns {number}
+        */
         function carsDistance(roadLength, carPos1, carPos2) {
             var dist = Math.abs(carPos2 - carPos1);
             return Math.min(dist, roadLength - dist);
         }
 
         /**
-         * @param {Road} road
-         * @param {number} laneNum
-         * @param {number} carIndex
-         * @returns {{distanceToNextCar: number, closingSpeed:number}}
-         */
+        * @param {Road} road
+        * @param {number} laneNum
+        * @param {number} carIndex
+        * @returns {{distanceToNextCar: number, closingSpeed:number}}
+        */
         function conditionsForMerging(road, laneNum, carIndex) {
             /** @type {Car} */
             var car = road.cars[carIndex];
@@ -175,7 +175,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
 
             if (!nextCarInfo && !prevCarInfo) {
                 return { distanceToNextCar: road.length - car.length,
-                         closingSpeed: 0 };
+                    closingSpeed: 0 };
             }
             if (!nextCarInfo || !prevCarInfo) {
                 throw new Error('If at least one other car is in the lane, both next and previous cars should not be empty');
@@ -188,14 +188,28 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                 return null;
             }
             return { distanceToNextCar: forwardSpace, closingSpeed: car.speed - nextCarInfo.car.speed };
+        } 
+
+        /**
+        * @param {Road} road
+        * @param {number} carIndex
+        * @returns {number}
+        */
+        function getMillSecSinceLastLaneChange(road, carIndex) {
+            /** @type {Car} */
+            var car = road.cars[carIndex];
+            var LastLaneChange = car.lastLaneChange;
+            var MillSecSinceLastLaneChange;
+            MillSecSinceLastLaneChange = Date.now() - LastLaneChange;
+            return MillSecSinceLastLaneChange;
         }
 
         /**
-         * @param {Road} road
-         * @param {Car} car
-         * @param {number} carIndex
-         * @returns {number}
-         */
+        * @param {Road} road
+        * @param {Car} car
+        * @param {number} carIndex
+        * @returns {number}
+        */
         function decideAcceleration(road, car, carIndex) {
             /** @type {number} */
             var distanceToNextCarBackside;
@@ -265,30 +279,39 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {Road} road
-         * @param {Car} car
-         * @param {number} carIndex
-         * @returns {number}
-         */
+        * @param {Road} road
+        * @param {Car} car
+        * @param {number} carIndex
+        * @returns {number}
+        */
         function decideNextLane(road, car, carIndex) {
             var spaceInCurrentLane;
             var spaceInOtherLane;
+            var MillSecSinceLaneChange;
             if (car.wrecked) {
                 return car.lane;
             }
             spaceInCurrentLane = conditionsForMerging(road, car.lane, carIndex);
-            if (spaceInCurrentLane && (spaceInCurrentLane.distanceToNextCar > car.length * 10)) {
+            if ((spaceInCurrentLane && (spaceInCurrentLane.distanceToNextCar > car.length * 10))) {
                 return car.lane; // plenty of space in current lane.
             }
+
+            MillSecSinceLaneChange = getMillSecSinceLastLaneChange(road, carIndex);
+            if(MillSecSinceLaneChange < 1000){
+                return car.lane; // Just changed lanes, must stay in current lane.
+            }
+
             if (car.lane < road.numLanes - 1) {
                 spaceInOtherLane = conditionsForMerging(road, car.lane + 1, carIndex);
                 if (spaceInOtherLane && (!spaceInCurrentLane || (spaceInOtherLane.closingSpeed < spaceInCurrentLane.closingSpeed))) {
+                    car.lastLaneChange = Date.now();
                     return car.lane + 1;
                 }
             }
             if (car.lane > 0) {
                 spaceInOtherLane = conditionsForMerging(road, car.lane - 1, carIndex);
                 if (spaceInOtherLane && (!spaceInCurrentLane || (spaceInOtherLane.closingSpeed < spaceInCurrentLane.closingSpeed))) {
+                    car.lastLaneChange = Date.now();
                     return car.lane - 1;
                 }
             }
@@ -296,9 +319,9 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {Road} road
-         * @param {Car} car
-         */
+        * @param {Road} road
+        * @param {Car} car
+        */
         function simulateNewtonMechanics(road, car) {
             car.speed = Math.min(car.maxSpeed, Math.max(0, car.speed + car.accel * deltaT));
             car.position += car.speed * deltaT + 0.5 * car.accel * deltaTSquared;
@@ -312,11 +335,11 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         }
 
         /**
-         * @param {Road} road
-         * @param {Car} car
-         * @param {number} carIndex
-         * @returns {Function|null}
-         */
+        * @param {Road} road
+        * @param {Car} car
+        * @param {number} carIndex
+        * @returns {Function|null}
+        */
         function simulateCar(road, car, carIndex) {
             car.lane = decideNextLane(road, car, carIndex);
             var nextAccel = decideAcceleration(road, car, carIndex);
@@ -440,7 +463,7 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
                             return;
                         }
                         loop();
-                    }, (1000.0 / consts.TARGET_FPS));
+                        }, (1000.0 / consts.TARGET_FPS));
                 }
 
                 stop();
@@ -459,4 +482,4 @@ define(['util/mathUtil', 'util/vector', 'util/car', 'util/road', 'util/consts'],
         };
 
 
-    });
+});
